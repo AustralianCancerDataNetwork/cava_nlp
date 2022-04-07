@@ -1,4 +1,4 @@
-import spacy
+import spacy, re
 from spacy.lang.en import English
 from spacy.symbols import ORTH, NORM
 from striprtf.striprtf import rtf_to_text
@@ -8,7 +8,7 @@ from spacy.tokenizer import Tokenizer
 from spacy.tokens import Token, Span, Doc
 from spacy.lang.en import English, TOKENIZER_EXCEPTIONS
 
-from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, times, abbv
+from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, times, abbv, no_whitespace, emails
 
 # retokeniser that allows us to tokenise brutally in the first step (all slashes, all periods, all commas)
 # and then reassemble important tokens that shouldn't be broken up such as decimal numbers, units that don't
@@ -222,4 +222,10 @@ class CaVaLang(English):
         # we don't want to preserve repeated whitespace if using matcher, 
         # but we will preserve linebreaks.  other string pre-processing can be added here
         text = '\n'.join([' '.join(t.split()) for t in text.split('\n') if t != ''])
+
+        # email pre-processing happens here because we want to tokenise on numbers as infixes
+        # so we have too much branching logic to handle emails with numeric elements - bit 
+        # hacky but fits here best.
+        text = re.sub(emails, 'EMAIL', text)
+
         return super(CaVaLang, self).__call__(text, *args, **kwargs)
