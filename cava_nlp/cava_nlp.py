@@ -36,6 +36,8 @@ class CaVaRetokenizer:
         
         time_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": [":", "-", "."]}}, {"IS_DIGIT": True}, {"LOWER": {"IN": times}}]]
 
+        email_patterns = []
+
         # these are non-specific merge steps that will re-join alphanumeric tokens split by a slash, 
         # or tokens that appear to be actual acronyms (single chars split by period) p.o, p.o., a.b.v etc.
         other_remerge = [[{"TEXT": {"REGEX": abbv}}, {"ORTH": "/"}, {"TEXT": {"REGEX": abbv}}],
@@ -108,11 +110,6 @@ class CaVaRetokenizer:
 def create_ecog_status(nlp, name):
     return ECOGStatus(nlp.vocab)
 
-@Language.component("whitespace_merger")
-def whitspace_merger(doc):
-    # we don't want to preserve repeated whitespace if using matcher, 
-    # but we will preserve linebreaks
-    return Doc(doc.vocab, [t.text for t in doc if not t.is_space and not ''.join(set(t.text)) == ' '])
 
 def get_widest_match(start, end, matches):
     for _, s, e in matches:
@@ -209,10 +206,10 @@ class CaVaLangDefaults(English.Defaults):
     for case, rule in special_cases:
         tokenizer_exceptions[case] = rule
     # more enthusiastic tokenisation rules than default english r'\D+\.\D+' r'\D+/\D+'
-    infixes = (unit_suffix + list(English.Defaults.infixes)  + ['<', '>', ';', '\(', '\)', '\|', '=', ':', ',', '\.', '/', '~','\+\+\+', '\+\+', '\+', '\d+'] + spacy.lang.char_classes.LIST_HYPHENS)
+    infixes = (unit_suffix + list(English.Defaults.infixes)  + ['&', '@', '<', '>', ';', '\(', '\)', '\|', '=', ':', ',', '\.', '/', '~','\+\+\+', '\+\+', '\+', '\d+'] + spacy.lang.char_classes.LIST_HYPHENS)
     # except that we remove standard unit suffixes so that we can handle more precisely
-    suffixes = (unit_suffix + [n for n in list(English.Defaults.suffixes) if 'GB' not in n] + ['~', '<', '>', ';', '\(', '\)', '\|', '=', ':', '/', '-', ',', '\+\+\+', '\+\+', '\+', '--'])
-    prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if '\+' not in x] + ['\?', '~','<', '>', ';', '\(', '\)', '\|', '-', '=', ':', '\+\+\+', '\+\+', '\+', '\.', '\d+', '/'])
+    suffixes = (unit_suffix + [n for n in list(English.Defaults.suffixes) if 'GB' not in n] + ['@', '~', '<', '>', ';', '\(', '\)', '\|', '=', ':', '/', '-', ',', '\+\+\+', '\+\+', '\+', '--'])
+    prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if '\+' not in x] + ['@', '\?', '~','<', '>', ';', '\(', '\)', '\|', '-', '=', ':', '\+\+\+', '\+\+', '\+', '\.', '\d+', '/'])
     # we are unlikely to care about urls more than we care about sloppy sentence boundaries and missing whitespace around periods
     url_match = None
 
@@ -220,3 +217,9 @@ class CaVaLangDefaults(English.Defaults):
 class CaVaLang(English):
     lang = 'cava_lang'
     Defaults = CaVaLangDefaults
+
+    def __call__(self, text, *args, **kwargs):
+        # we don't want to preserve repeated whitespace if using matcher, 
+        # but we will preserve linebreaks.  other string pre-processing can be added here
+        text = '\n'.join([' '.join(t.split()) for t in text.split('\n') if t != ''])
+        return super(CaVaLang, self).__call__(text, *args, **kwargs)
