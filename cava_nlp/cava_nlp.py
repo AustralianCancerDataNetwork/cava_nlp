@@ -18,8 +18,36 @@ from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, month
 def create_cava_retokenizer(nlp, name):
     return CaVaRetokenizer(nlp.vocab)
 
-class CaVaRetokenizer:
-    def __init__(self, vocab):
+@spacy.registry.tokenizers("cava.Tokenizer.v1")
+def create_tokenizer():
+
+    def tokenizer_factory(nlp):
+        prefixes = nlp.Defaults.prefixes
+        suffixes = nlp.Defaults.suffixes
+        infixes = nlp.Defaults.infixes
+
+        prefix_search = spacy.util.compile_prefix_regex(prefixes).search if prefixes else None
+        suffix_search = spacy.util.compile_suffix_regex(suffixes).search if suffixes else None
+        infix_finditer = spacy.util.compile_infix_regex(infixes).finditer if infixes else None
+
+        return CaVaRetokenizer(nlp.vocab,
+                               rules = nlp.Defaults.tokenizer_exceptions,
+                               prefix_search = prefix_search,
+                               suffix_search = suffix_search,
+                               infix_finditer = infix_finditer, 
+                               token_match = nlp.Defaults.token_match,
+                               url_match = nlp.Defaults.url_match)
+
+    return tokenizer_factory
+
+class CaVaRetokenizer(Tokenizer):
+
+    def __init__(self, vocab, rules, prefix_search, suffix_search, 
+                       infix_finditer, token_match, url_match):
+        
+        super(CaVaRetokenizer, self).__init__(vocab, rules, prefix_search, suffix_search, 
+                                              infix_finditer, token_match, url_match)
+
 
         unit_patterns = [[{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}, {"LOWER": {"IN": ["/", "per"]}}, {"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}],
                          [{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}]]
@@ -63,7 +91,7 @@ class CaVaRetokenizer:
         self.other = Matcher(vocab)
         
         self.date_matcher.add("date", date_patterns)
-        self.unit_matcher.add("unit", unit_patterns)#, on_match=get_ecog_value)
+        self.unit_matcher.add("unit", unit_patterns)
         self.decimal_matcher.add("decimal", decimal_patterns)
         self.unit_val_matcher.add("unit_val", unit_val_patterns)
         self.time_matcher.add("time", time_patterns)
@@ -109,6 +137,7 @@ class CaVaRetokenizer:
                 doc[start].norm_ = 'query'
                     
     def __call__(self, doc):
+        doc = super(CaVaRetokenizer, self).__call__(doc)
         self.merge_spans(self.decimal_matcher(doc), doc, 'decimal')
         self.merge_spans(self.date_matcher(doc), doc, 'date')
         self.merge_spans(self.time_matcher(doc), doc, 'time')
@@ -223,11 +252,16 @@ class CaVaLangDefaults(English.Defaults):
     prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if '\+' not in x] + ['@', '\?', '~','<', '>', ';', '\(', '\)', '\|', '-', '=', ':', '\+\+\+', '\+\+', '\+', '\.', '\d+', '/'])
     # we are unlikely to care about urls more than we care about sloppy sentence boundaries and missing whitespace around periods
     url_match = None
+    create_tokenizer = create_tokenizer
 
 @spacy.registry.languages('cava_lang')
 class CaVaLang(English):
     lang = 'cava_lang'
     Defaults = CaVaLangDefaults
+
+    # def __init__(self, *args, **kwargs):
+    #     super(CaVaLang, self).__init__(*args, create_tokenizer=create_tokenizer, **kwargs)
+
 
     def __call__(self, text, *args, **kwargs):
         # we don't want to preserve repeated whitespace if using matcher, 
