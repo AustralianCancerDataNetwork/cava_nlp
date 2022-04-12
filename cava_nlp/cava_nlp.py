@@ -10,7 +10,7 @@ from spacy.lang.en import English, TOKENIZER_EXCEPTIONS
 
 from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, times, abbv, no_whitespace, emails
 
-# retokeniser that allows us to tokenise brutally in the first step (all slashes, all periods, all commas)
+# retokeniser that allows us to tokenise brutally in the first step (e.g. all slashes, all periods, all commas)
 # and then reassemble important tokens that shouldn't be broken up such as decimal numbers, units that don't
 # fit the basic num/denum form e.g. 10mg/20mL or slashes with no whitespace and alpha characters on both sides
 # e.g. O/E or known tumor markers 
@@ -36,7 +36,9 @@ class CaVaRetokenizer:
         
         time_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": [":", "-", "."]}}, {"IS_DIGIT": True}, {"LOWER": {"IN": times}}]]
 
-        email_patterns = []
+        # making sure we can mark a question mark at the beginning of a word as a query despite it being tokenised
+        # e.g. ?query timing
+        query_patterns = [[{"TEXT": {"IN": ["?"]}}, {"IS_ALPHA": True}]]
 
         # these are non-specific merge steps that will re-join alphanumeric tokens split by a slash, 
         # or tokens that appear to be actual acronyms (single chars split by period) p.o, p.o., a.b.v etc.
@@ -57,6 +59,7 @@ class CaVaRetokenizer:
         self.unit_matcher = Matcher(vocab)
         self.decimal_matcher = Matcher(vocab)
         self.unit_val_matcher = Matcher(vocab)
+        self.query_matcher = Matcher(vocab)
         self.other = Matcher(vocab)
         
         self.date_matcher.add("date", date_patterns)
@@ -64,6 +67,7 @@ class CaVaRetokenizer:
         self.decimal_matcher.add("decimal", decimal_patterns)
         self.unit_val_matcher.add("unit_val", unit_val_patterns)
         self.time_matcher.add("time", time_patterns)
+        self.query_matcher.add("query", query_patterns)
         self.other.add("other", other_remerge)
 
     def set_extension(self, token, name):
@@ -84,8 +88,7 @@ class CaVaRetokenizer:
                 if name != "":
                     for token in span:
                         self.set_extension(token, name) 
-
-        
+      
     def set_units(self, matches, doc, name=""):
         spans = []  # Collect the matched spans here
         for match_id, start, end in matches:
@@ -96,6 +99,14 @@ class CaVaRetokenizer:
                     self.set_extension(token, 'unit_value')
                 elif token.text.lower() not in ['/', 'per']:
                     self.set_extension(token, 'unit')
+
+    def mark_queries(self, matches, doc):
+        # this gives a question mark at the start of a word with no whitespace in between
+        # the norm of 'query', as per '??' and '???', but question marks at the end of a 
+        # sentence are left as-is
+        for match_id, start, end in matches:
+            if doc[start].whitespace_ == '':
+                doc[start].norm_ = 'query'
                     
     def __call__(self, doc):
         self.merge_spans(self.decimal_matcher(doc), doc, 'decimal')
@@ -103,13 +114,13 @@ class CaVaRetokenizer:
         self.merge_spans(self.time_matcher(doc), doc, 'time')
         self.set_units(self.unit_matcher(doc), doc)
         self.merge_spans(self.other(doc), doc)
+        self.mark_queries(self.query_matcher(doc), doc)
         return doc
 
 # rule-based matcher for extracting ecog status
 @Language.factory("ecog_status")
 def create_ecog_status(nlp, name):
     return ECOGStatus(nlp.vocab)
-
 
 def get_widest_match(start, end, matches):
     for _, s, e in matches:
@@ -206,7 +217,7 @@ class CaVaLangDefaults(English.Defaults):
     for case, rule in special_cases:
         tokenizer_exceptions[case] = rule
     # more enthusiastic tokenisation rules than default english r'\D+\.\D+' r'\D+/\D+'
-    infixes = (unit_suffix + list(English.Defaults.infixes)  + ['&', '@', '<', '>', ';', '\(', '\)', '\|', '=', ':', ',', '\.', '/', '~','\+\+\+', '\+\+', '\+', '\d+'] + spacy.lang.char_classes.LIST_HYPHENS)
+    infixes = (unit_suffix + list(English.Defaults.infixes)  + ['&', '@', '<', '>', ';', '\(', '\)', '\|', '=', ':', ',', '\.', '/', '~','\+\+\+', '\+\+', '\+', '\d+', '\?'] + spacy.lang.char_classes.LIST_HYPHENS)
     # except that we remove standard unit suffixes so that we can handle more precisely
     suffixes = (unit_suffix + [n for n in list(English.Defaults.suffixes) if 'GB' not in n] + ['@', '~', '<', '>', ';', '\(', '\)', '\|', '=', ':', '/', '-', ',', '\+\+\+', '\+\+', '\+', '--'])
     prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if '\+' not in x] + ['@', '\?', '~','<', '>', ';', '\(', '\)', '\|', '-', '=', ':', '\+\+\+', '\+\+', '\+', '\.', '\d+', '/'])
