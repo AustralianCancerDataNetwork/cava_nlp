@@ -8,7 +8,7 @@ from spacy.tokenizer import Tokenizer
 from spacy.tokens import Token, Span, Doc
 from spacy.lang.en import English, TOKENIZER_EXCEPTIONS
 
-from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, times, abbv, no_whitespace, emails
+from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, times, abbv, no_whitespace, emails, day_regex, year_regex, numeric_month_regex
 
 # retokeniser that allows us to tokenise brutally in the first step (e.g. all slashes, all periods, all commas)
 # and then reassemble important tokens that shouldn't be broken up such as decimal numbers, units that don't
@@ -40,6 +40,15 @@ def create_tokenizer():
 
     return tokenizer_factory
 
+class CavaMatcher(Matcher):
+
+    def __init__(self, *args, **kwargs):
+        super(CavaMatcher, self).__init__(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return super(CavaMatcher, self).__call__(*args, **kwargs)
+
+
 class CaVaRetokenizer(Tokenizer):
 
     def __init__(self, vocab, rules, prefix_search, suffix_search, 
@@ -49,19 +58,26 @@ class CaVaRetokenizer(Tokenizer):
                                               infix_finditer, token_match, url_match)
 
 
-        unit_patterns = [[{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}, {"LOWER": {"IN": ["/", "per"]}}, {"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}],
-                         [{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}]]
+        unit_patterns = [[{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}, 
+                          {"LOWER": {"IN": ["/", "per"]}}, # 100mg/mL, 10mg/100mL, 10 mg per L...
+                          {"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}],
+                         [{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}], # 20L, 50 mg
+                         [{"_": {"decimal": True}},
+                          {"TEXT": {"REGEX": units_regex}}]] # 3.5cm
                 
         decimal_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": ['.', ',']}}, {"IS_DIGIT": True}]]
-        
-        unit_val_patterns = [[{"IS_DIGIT": True}]]
 
-        date_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True},  {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True}], # 1/1/20, 1-1-20
-                         [{"IS_DIGIT": True},  {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True}], # 1/2020, 1-2020
-                         [{"IS_DIGIT": True}, {"ORTH": {"IN": ["/", "-"]}, "OP": "?"}, {"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-"]}, "OP": "?"}, {"IS_DIGIT": True, "OP": "?"}], # 1-Jan-20, 1/jan/20
-                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"IS_DIGIT": True}], # Jan/2020, Jan 2020, Jan '20
-                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": ordinal}}]]
-        
+        date_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True},  {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True}], # 1/1/20, 1-1-20 - keep as digit based because 3 part unlikely to be false pos 
+                         [{"TEXT": {"REGEX": numeric_month_regex}},  {"ORTH": {"IN": ["/"]}}, {"TEXT": {"REGEX": year_regex}}], # 1/2020, 1-2020 - changed from is digit to avoid false pos with BP
+                         [{"TEXT": {"REGEX": day_regex}},  {"ORTH": {"IN": ["/"]}}, {"TEXT": {"REGEX": numeric_month_regex}}], # 31/12
+                         [{"IS_DIGIT": True}, {"ORTH": {"IN": ["/", "-"]}, "OP": "?"}, {"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-"]}, "OP": "?"}, {"TEXT": {"REGEX": year_regex}, "OP": "?"}], # 1-Jan-20, 1/jan/20
+                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": year_regex}}], # Jan/2020, Jan 2020, Jan '20
+                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": ordinal}}]] # September 4th
+        dp = [] # dates must either start sentence or have preceding space, to avoid false pos with spinal notation e.g. C3/4
+        for d in date_patterns:
+            dp.append([{"IS_SENT_START": True}] + d)
+            dp.append([{"SPACY": True}] + d)
+
         time_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": [":", "-", "."]}}, {"IS_DIGIT": True}, {"LOWER": {"IN": times}}]]
 
         # making sure we can mark a question mark at the beginning of a word as a query despite it being tokenised
@@ -82,18 +98,16 @@ class CaVaRetokenizer(Tokenizer):
         Token.set_extension("date", default=False, force=True)
         Token.set_extension("time", default=False, force=True)
 
-        self.date_matcher = Matcher(vocab)
-        self.time_matcher = Matcher(vocab)
-        self.unit_matcher = Matcher(vocab)
-        self.decimal_matcher = Matcher(vocab)
-        self.unit_val_matcher = Matcher(vocab)
-        self.query_matcher = Matcher(vocab)
-        self.other = Matcher(vocab)
+        self.date_matcher = CavaMatcher(vocab)
+        self.time_matcher = CavaMatcher(vocab)
+        self.unit_matcher = CavaMatcher(vocab)
+        self.decimal_matcher = CavaMatcher(vocab)
+        self.query_matcher = CavaMatcher(vocab)
+        self.other = CavaMatcher(vocab)
         
-        self.date_matcher.add("date", date_patterns)
+        self.date_matcher.add("date", dp)
         self.unit_matcher.add("unit", unit_patterns)
         self.decimal_matcher.add("decimal", decimal_patterns)
-        self.unit_val_matcher.add("unit_val", unit_val_patterns)
         self.time_matcher.add("time", time_patterns)
         self.query_matcher.add("query", query_patterns)
         self.other.add("other", other_remerge)
@@ -101,7 +115,7 @@ class CaVaRetokenizer(Tokenizer):
     def set_extension(self, token, name):
         token._.__setattr__(name, True)
         
-    def merge_spans(self, matches, doc, name=""):
+    def merge_spans(self, matches, doc, name="", skip_first=False):
         spans = []  # Collect the matched spans here
         for match_id, start, end in matches:
             spans.append(doc[start:end])
@@ -112,6 +126,9 @@ class CaVaRetokenizer(Tokenizer):
             for span in spacy.util.filter_spans(spans):
                 if name == "" and len([s for s in span[:-1] if s.whitespace_]) > 0:
                     continue
+                # skipping first token in match for dates only at this point, because we look backwards to check for space
+                if skip_first:
+                    span = span[1:]
                 retokenizer.merge(span)
                 if name != "":
                     for token in span:
@@ -123,7 +140,7 @@ class CaVaRetokenizer(Tokenizer):
             spans.append(doc[start:end])
         for span in spacy.util.filter_spans(spans):
             for token in span:
-                if token.is_digit:
+                if token.is_digit or token._.decimal:
                     self.set_extension(token, 'unit_value')
                 elif token.text.lower() not in ['/', 'per']:
                     self.set_extension(token, 'unit')
@@ -139,7 +156,7 @@ class CaVaRetokenizer(Tokenizer):
     def __call__(self, doc):
         doc = super(CaVaRetokenizer, self).__call__(doc)
         self.merge_spans(self.decimal_matcher(doc), doc, 'decimal')
-        self.merge_spans(self.date_matcher(doc), doc, 'date')
+        self.merge_spans(self.date_matcher(doc), doc, 'date', True)
         self.merge_spans(self.time_matcher(doc), doc, 'time')
         self.set_units(self.unit_matcher(doc), doc)
         self.merge_spans(self.other(doc), doc)
@@ -254,23 +271,73 @@ class CaVaLangDefaults(English.Defaults):
     url_match = None
     create_tokenizer = create_tokenizer
 
+def custom_split(input_text, target_char):
+    # performs the same as str.split(), whilst making 
+    # distinction between spaces / linebreak at the start
+    # of the string versus multiple consecutive space / linebreak
+    # char within the string
+    split_str = []
+    line = ''
+    for ch in input_text:
+        if ch == target_char:
+            if line != '':
+                split_str.append(line)
+            split_str.append('')
+            line = ''
+        else:  
+            line += ch
+    if line != '':
+        split_str.append(line)
+        
+    assert len(input_text) == sum([len(l) if len(l) > 0 else 1 for l in split_str])
+    return split_str
+
+def whitespace_preprocess(input_text, target_char):
+    # this function ensures that exactly one space and one line-break 
+    # is retained in an equivalent place in the text for any number of
+    # consecutive space or line-break characters.
+    # this is done so that basic matchers can be used that do not need
+    # to account for inconsistent spacing, which is relatively common.
+    
+    split_str = custom_split(input_text, target_char)
+
+    a, b = '', ''
+    skips, merged_string = [], []
+    if len(split_str) == 1:
+        split_str += ['']
+    for a, b in zip(split_str[:-1], split_str[1:] + ['']):
+        if a == '' and b == '':
+            skips.append(0)
+        else:
+            skips.append(max(1, len(a)))
+            merged_string.append(a)
+    if len(merged_string) == 0:
+        merged_string.append(a)
+    skips.append(len(b))
+    merged_string.append(b)
+    
+    return ''.join([m if m != '' else target_char for m in merged_string])
+
+
 @spacy.registry.languages('cava_lang')
 class CaVaLang(English):
     lang = 'cava_lang'
     Defaults = CaVaLangDefaults
 
-    # def __init__(self, *args, **kwargs):
-    #     super(CaVaLang, self).__init__(*args, create_tokenizer=create_tokenizer, **kwargs)
-
-
-    def __call__(self, text, *args, **kwargs):
+    def __call__(self, text, keep_whitespace=False, *args, **kwargs):
         # we don't want to preserve repeated whitespace if using matcher, 
         # but we will preserve linebreaks.  other string pre-processing can be added here
-        text = '\n'.join([' '.join(t.split()) for t in text.split('\n') if t != ''])
+
+        # this fails when using pre-annotated text because it actually 
+        # reduces the text length which then doesn't align with intended spans
+        # so make it optional and default to false
+        if not keep_whitespace:
+            for c in ['\n', ' ']:
+                text = whitespace_preprocess(text, c)
 
         # email pre-processing happens here because we want to tokenise on numbers as infixes
         # so we have too much branching logic to handle emails with numeric elements - bit 
         # hacky but fits here best.
-        text = re.sub(emails, 'EMAIL', text)
+        text = re.sub(emails, lambda x: 'x' * len(x.group()), text)
 
         return super(CaVaLang, self).__call__(text, *args, **kwargs)

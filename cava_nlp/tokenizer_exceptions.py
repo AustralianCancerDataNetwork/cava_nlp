@@ -35,11 +35,16 @@ for a in units_num:
             unit_suffix.append(f'{a}/{b}')
 
 units_regex = '|'.join([f'{u}' for u in units_denom])
-units_regex = f'(\d+)?({units_regex})'
+units_regex = f'^(\d+)?({units_regex})$'
 
+year_regex = '(^(19|20)\d\d$|^\d?\d$)'
+numeric_month_regex = '(^[0-1]?\d$)'
+day_regex = '(^[0-3]?\d$)'
 months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec',
           'january', 'february', 'march', 'april', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 ordinal = r'\d{1,2}(?:[stndrh]){2}?'
+
+
 times = ['am', 'a.m.', 'a.m', 'pm', 'p.m.', 'p.m']
 # single alpha char with no whitespace to merge abbreviatons like p.o. or i.v.
 abbv = r'^[a-zA-Z]$'
