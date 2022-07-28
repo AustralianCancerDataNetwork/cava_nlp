@@ -1,0 +1,35 @@
+"""
+COPYRIGHT NOTICE, DISCLAIMER and LICENCE 
+------------------------------------------------------------------------------------------------------------
+* Copyright (C) University of New South Wales
+* Copyright (C) Georgina Kennedy
+* Copyright (C) Timothy Churches
+
+All rights reserved
+
+This software is provided "as-is", without warranty of any kind, express or implied, including, without 
+limitation, the warrants of merchantability, fitness for a particular purpose, title, and non-infringement.
+In no event shall the Copyright owners, or anyone distributing the software, be liable for any damages or 
+other liability, whether in contract, tort or otherwise, arising from, out of, or in connection with the 
+software, even if advised of the possibility of such damage.
+
+Unauthorised copying of this file, via any medium, is strictly prohibited.
+Proprietary and confidential.
+
+This file is part of the cava_lang projects
+Files belonging to the cava_lang project cannot be copied and/or distributed without the express permission of 
+Georgina Kennedy (georgina.kennedy@unsw.edu.au) or Tim Churches (tim.churches@inghaminstitute.org.au)
+
+Non-transferrable permission is hereby granted to use, copy and modify this software, or portions herof, 
+for non-commercial use only, subject to the following restrictions:
+
+1. The grantee is a contributing member of the Australian Cancer Data Network collaboration. 
+2. The grantee does not distribute the software to anyone who is not a contributing member of the 
+   Australian Cancer Data Network.
+3. The origin of this software must not be misrepresented.
+4. Altered source versions must be plainly marked as such, and must not be misrepresented as being 
+   the original software.
+5. This Copyright notice may not be removed or altered from any source or altered source distribution.
+
+------------------------------------------------------------------------------------------------------------
+"""
