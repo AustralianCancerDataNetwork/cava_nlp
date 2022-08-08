@@ -14,14 +14,38 @@ from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, month
 # and then reassemble important tokens that shouldn't be broken up such as decimal numbers, units that don't
 # fit the basic num/denum form e.g. 10mg/20mL or slashes with no whitespace and alpha characters on both sides
 # e.g. O/E or known tumor markers 
+
 @Language.factory("cava_retokenizer")
 def create_cava_retokenizer(nlp, name):
-    return CaVaRetokenizer(nlp.vocab)
+    return CaVaRetokenizer(nlp)
 
 @spacy.registry.tokenizers("cava.Tokenizer.v1")
 def create_tokenizer():
 
     def tokenizer_factory(nlp):
+        return CaVaRetokenizer(nlp)#.vocab,
+                            #    rules = nlp.Defaults.tokenizer_exceptions,
+                            #    prefix_search = prefix_search,
+                            #    suffix_search = suffix_search,
+                            #    infix_finditer = infix_finditer, 
+                            #    token_match = nlp.Defaults.token_match,
+                            #    url_match = nlp.Defaults.url_match)
+
+    return tokenizer_factory
+
+class CaVaMatcher(Matcher):
+
+    def __init__(self, *args, **kwargs):
+        super(CaVaMatcher, self).__init__(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return super(CaVaMatcher, self).__call__(*args, **kwargs)
+
+
+class CaVaRetokenizer(Tokenizer):
+
+    def __init__(self, nlp): # vocab, rules, prefix_search, suffix_search, 
+                             # infix_finditer, token_match, url_match):
         prefixes = nlp.Defaults.prefixes
         suffixes = nlp.Defaults.suffixes
         infixes = nlp.Defaults.infixes
@@ -29,33 +53,11 @@ def create_tokenizer():
         prefix_search = spacy.util.compile_prefix_regex(prefixes).search if prefixes else None
         suffix_search = spacy.util.compile_suffix_regex(suffixes).search if suffixes else None
         infix_finditer = spacy.util.compile_infix_regex(infixes).finditer if infixes else None
-
-        return CaVaRetokenizer(nlp.vocab,
-                               rules = nlp.Defaults.tokenizer_exceptions,
-                               prefix_search = prefix_search,
-                               suffix_search = suffix_search,
-                               infix_finditer = infix_finditer, 
-                               token_match = nlp.Defaults.token_match,
-                               url_match = nlp.Defaults.url_match)
-
-    return tokenizer_factory
-
-class CavaMatcher(Matcher):
-
-    def __init__(self, *args, **kwargs):
-        super(CavaMatcher, self).__init__(*args, **kwargs)
-
-    def __call__(self, *args, **kwargs):
-        return super(CavaMatcher, self).__call__(*args, **kwargs)
-
-
-class CaVaRetokenizer(Tokenizer):
-
-    def __init__(self, vocab, rules, prefix_search, suffix_search, 
-                       infix_finditer, token_match, url_match):
         
-        super(CaVaRetokenizer, self).__init__(vocab, rules, prefix_search, suffix_search, 
-                                              infix_finditer, token_match, url_match)
+        super(CaVaRetokenizer, self).__init__(nlp.vocab, nlp.Defaults.tokenizer_exceptions, 
+                                              prefix_search, suffix_search, 
+                                              infix_finditer, nlp.Defaults.token_match, 
+                                              nlp.Defaults.url_match)
 
 
         unit_patterns = [[{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}, 
@@ -68,15 +70,19 @@ class CaVaRetokenizer(Tokenizer):
         decimal_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": ['.', ',']}}, {"IS_DIGIT": True}]]
 
         date_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True},  {"ORTH": {"IN": ["/", "-"]}}, {"IS_DIGIT": True}], # 1/1/20, 1-1-20 - keep as digit based because 3 part unlikely to be false pos 
-                         [{"TEXT": {"REGEX": numeric_month_regex}},  {"ORTH": {"IN": ["/"]}}, {"TEXT": {"REGEX": year_regex}}], # 1/2020, 1-2020 - changed from is digit to avoid false pos with BP
-                         [{"TEXT": {"REGEX": day_regex}},  {"ORTH": {"IN": ["/"]}}, {"TEXT": {"REGEX": numeric_month_regex}}], # 31/12
+                         [{"TEXT": {"REGEX": numeric_month_regex}},  {"ORTH": {"IN": ["/", "-"]}}, {"TEXT": {"REGEX": year_regex}}], # 1/2020, 1-2020 - changed from is digit to avoid false pos with BP
+                         [{"TEXT": {"REGEX": day_regex}},  {"ORTH": {"IN": ["/", "-"]}}, {"TEXT": {"REGEX": numeric_month_regex}}], # 31/12
                          [{"IS_DIGIT": True}, {"ORTH": {"IN": ["/", "-"]}, "OP": "?"}, {"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-"]}, "OP": "?"}, {"TEXT": {"REGEX": year_regex}, "OP": "?"}], # 1-Jan-20, 1/jan/20
+                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": numeric_month_regex}}, {"TEXT": {"REGEX": ordinal}}, {"TEXT": {"REGEX": year_regex}, "OP": "?"}], # September 4th
                          [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": year_regex}}], # Jan/2020, Jan 2020, Jan '20
-                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": ordinal}}]] # September 4th
-        dp = [] # dates must either start sentence or have preceding space, to avoid false pos with spinal notation e.g. C3/4
+                         [{"LOWER": {"IN": months}},  {"ORTH": {"IN": ["/", "-", "\'"]}, "OP": "?"}, {"TEXT": {"REGEX": numeric_month_regex}}, {"TEXT": {"REGEX": year_regex}, "OP": "?"}]] # September 4th
+
+        dp = [[],[]] # dates must either start sentence or have preceding space, to avoid false pos with spinal notation e.g. C3/4
         for d in date_patterns:
-            dp.append([{"IS_SENT_START": True}] + d)
-            dp.append([{"SPACY": True}] + d)
+            dp[0].append([{"SPACY": True}] + d)
+            sent_start = [attr.copy() for attr in d]
+            sent_start[0]["IS_SENT_START"] = True
+            dp[1].append(sent_start)
 
         time_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": [":", "-", "."]}}, {"IS_DIGIT": True}, {"LOWER": {"IN": times}}]]
 
@@ -93,19 +99,21 @@ class CaVaRetokenizer(Tokenizer):
                          [{"TEXT": {"REGEX": abbv}}, {"ORTH": '.'}, {"TEXT": {"REGEX": abbv}}, {"ORTH": '.'}, {"TEXT": {"REGEX": abbv}}, {"ORTH": '.', "OP": "?"}]]
         
         Token.set_extension("unit", default=False, force=True)
-        Token.set_extension("unit_value", default=False, force=True)
+        Token.set_extension("unit_value", default=False, force=True )
         Token.set_extension("decimal", default=False, force=True)
         Token.set_extension("date", default=False, force=True)
         Token.set_extension("time", default=False, force=True)
 
-        self.date_matcher = CavaMatcher(vocab)
-        self.time_matcher = CavaMatcher(vocab)
-        self.unit_matcher = CavaMatcher(vocab)
-        self.decimal_matcher = CavaMatcher(vocab)
-        self.query_matcher = CavaMatcher(vocab)
-        self.other = CavaMatcher(vocab)
+        self.date_matcher_skip = CaVaMatcher(nlp.vocab)
+        self.date_matcher = CaVaMatcher(nlp.vocab)
+        self.time_matcher = CaVaMatcher(nlp.vocab)
+        self.unit_matcher = CaVaMatcher(nlp.vocab)
+        self.decimal_matcher = CaVaMatcher(nlp.vocab)
+        self.query_matcher = CaVaMatcher(nlp.vocab)
+        self.other = CaVaMatcher(nlp.vocab)
         
-        self.date_matcher.add("date", dp)
+        self.date_matcher_skip.add("date", dp[0])
+        self.date_matcher.add("date", dp[1])
         self.unit_matcher.add("unit", unit_patterns)
         self.decimal_matcher.add("decimal", decimal_patterns)
         self.time_matcher.add("time", time_patterns)
@@ -156,7 +164,8 @@ class CaVaRetokenizer(Tokenizer):
     def __call__(self, doc):
         doc = super(CaVaRetokenizer, self).__call__(doc)
         self.merge_spans(self.decimal_matcher(doc), doc, 'decimal')
-        self.merge_spans(self.date_matcher(doc), doc, 'date', True)
+        self.merge_spans(self.date_matcher_skip(doc), doc, 'date', True)
+        self.merge_spans(self.date_matcher(doc), doc, 'date')
         self.merge_spans(self.time_matcher(doc), doc, 'time')
         self.set_units(self.unit_matcher(doc), doc)
         self.merge_spans(self.other(doc), doc)
@@ -263,10 +272,10 @@ class CaVaLangDefaults(English.Defaults):
     for case, rule in special_cases:
         tokenizer_exceptions[case] = rule
     # more enthusiastic tokenisation rules than default english r'\D+\.\D+' r'\D+/\D+'
-    infixes = (unit_suffix + list(English.Defaults.infixes)  + ['&', '@', '<', '>', ';', '\(', '\)', '\|', '=', ':', ',', '\.', '/', '~','\+\+\+', '\+\+', '\+', '\d+', '\?'] + spacy.lang.char_classes.LIST_HYPHENS)
+    infixes = (unit_suffix + list(English.Defaults.infixes)  + ['&', '@', '<', '>', ';', r'\(', r'\)', r'\|', '=', ':', ',', r'\.', r'\/', '~',r'\+\+\+', r'\+\+', r'\+', r'\d+', r'\?'] + spacy.lang.char_classes.LIST_HYPHENS)
     # except that we remove standard unit suffixes so that we can handle more precisely
-    suffixes = (unit_suffix + [n for n in list(English.Defaults.suffixes) if 'GB' not in n] + ['@', '~', '<', '>', ';', '\(', '\)', '\|', '=', ':', '/', '-', ',', '\+\+\+', '\+\+', '\+', '--'])
-    prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if '\+' not in x] + ['@', '\?', '~','<', '>', ';', '\(', '\)', '\|', '-', '=', ':', '\+\+\+', '\+\+', '\+', '\.', '\d+', '/'])
+    suffixes = (unit_suffix + [n for n in list(English.Defaults.suffixes) if 'GB' not in n] + ['@', '~', '<', '>', ';', r'\(', r'\)', r'\|', '=', ':', '/', '-', ',', r'\+\+\+', r'\+\+', r'\+', '--'])
+    prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if r'\+' not in x] + ['@', r'\?', '~','<', '>', ';', r'\(', r'\)', r'\|', '-', '=', ':', r'\+\+\+', r'\+\+', r'\+', r'\.', r'\d+', '/'])
     # we are unlikely to care about urls more than we care about sloppy sentence boundaries and missing whitespace around periods
     url_match = None
     create_tokenizer = create_tokenizer
@@ -302,19 +311,16 @@ def whitespace_preprocess(input_text, target_char):
     split_str = custom_split(input_text, target_char)
 
     a, b = '', ''
-    skips, merged_string = [], []
+    merged_string = []
     if len(split_str) == 1:
         split_str += ['']
     for a, b in zip(split_str[:-1], split_str[1:] + ['']):
-        if a == '' and b == '':
-            skips.append(0)
-        else:
-            skips.append(max(1, len(a)))
+        if a != '' or b != '':
             merged_string.append(a)
     if len(merged_string) == 0:
         merged_string.append(a)
-    skips.append(len(b))
-    merged_string.append(b)
+    if b != '':
+        merged_string.append(b)
     
     return ''.join([m if m != '' else target_char for m in merged_string])
 
