@@ -172,6 +172,10 @@ class CaVaRetokenizer(Tokenizer):
         self.mark_queries(self.query_matcher(doc), doc)
         return doc
 
+# # trained NER for extracting oral drugs
+# @Language.factory("oral_meds")
+# def ..
+
 # rule-based matcher for extracting ecog status
 @Language.factory("ecog_status")
 def create_ecog_status(nlp, name):
