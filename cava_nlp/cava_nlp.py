@@ -8,7 +8,9 @@ from spacy.tokenizer import Tokenizer
 from spacy.tokens import Token, Span, Doc
 from spacy.lang.en import English, TOKENIZER_EXCEPTIONS
 
-from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, times, abbv, no_whitespace, emails, day_regex, year_regex, numeric_month_regex
+from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, \
+                                  times, abbv, no_whitespace, emails, day_regex, year_regex, \
+                                  numeric_month_regex, scientific_notation
 
 # retokeniser that allows us to tokenise brutally in the first step (e.g. all slashes, all periods, all commas)
 # and then reassemble important tokens that shouldn't be broken up such as decimal numbers, units that don't
@@ -59,7 +61,20 @@ class CaVaRetokenizer(Tokenizer):
                                               infix_finditer, nlp.Defaults.token_match, 
                                               nlp.Defaults.url_match)
 
-        decimal_patterns = [[{"IS_DIGIT": True}, {"ORTH": {"IN": ['.', ',']}, 'SPACY': False}, {"IS_DIGIT": True}]]
+        sci_notation_patterns = [[{"LOWER":"x", "OP": "?"},
+                                  {"TEXT": "10"}, 
+                                  {"LOWER":"x", "OP": "?"},
+                                  {"TEXT": {"IN":["^", "**"]}},
+                                  {"IS_DIGIT": True}],
+                                  [{"IS_DIGIT": True},
+                                   {"LOWER": "e"},
+                                   {"TEXT": "+", "OP": "?"},
+                                   {"IS_DIGIT": True}]
+                                ]
+
+        decimal_patterns = [[{"IS_DIGIT": True, "LIKE_NUM": True}, 
+                             {"ORTH": {"IN": ['.', ',']}, 'SPACY': False}, 
+                             {"IS_DIGIT": True, "LIKE_NUM": True}]]
 
         date_patterns = [[{"IS_DIGIT": True, 'SPACY': False}, {"ORTH": "-", 'SPACY': False}, {"IS_DIGIT": True, 'SPACY': False},  {"ORTH": "-", "SPACY": False}, {"IS_DIGIT": True}], # 1/1/20, 1-1-20 - keep as digit based because 3 part unlikely to be false pos 
                         [{"IS_DIGIT": True, 'SPACY': False}, {"ORTH": "/", 'SPACY': False}, {"IS_DIGIT": True, 'SPACY': False},  {"ORTH": "/", "SPACY": False}, {"IS_DIGIT": True}], # no longer expressed as 'in', as we really want the separators to be the same
@@ -94,6 +109,7 @@ class CaVaRetokenizer(Tokenizer):
                          [{"TEXT": {"REGEX": abbv}}, {"ORTH": '.'}, {"TEXT": {"REGEX": abbv}}, {"ORTH": '.', "OP": "?"}],
                          [{"TEXT": {"REGEX": abbv}}, {"ORTH": '.'}, {"TEXT": {"REGEX": abbv}}, {"ORTH": '.'}, {"TEXT": {"REGEX": abbv}}, {"ORTH": '.', "OP": "?"}]]
         
+        Token.set_extension("sci_not", default=False, force=True)
         Token.set_extension("decimal", default=False, force=True)
         Token.set_extension("date", default=False, force=True)
         Token.set_extension("time", default=False, force=True)
@@ -103,10 +119,12 @@ class CaVaRetokenizer(Tokenizer):
         self.time_matcher = CaVaMatcher(nlp.vocab)
         self.decimal_matcher = CaVaMatcher(nlp.vocab)
         self.query_matcher = CaVaMatcher(nlp.vocab)
+        self.sci_not_matcher = CaVaMatcher(nlp.vocab)
         self.other = CaVaMatcher(nlp.vocab)
         
         self.date_matcher_skip.add("date", dp[0])
         self.date_matcher.add("date", dp[1])
+        self.sci_not_matcher.add("sci_not", sci_notation_patterns)
         self.decimal_matcher.add("decimal", decimal_patterns)
         self.time_matcher.add("time", time_patterns)
         self.query_matcher.add("query", query_patterns)
@@ -159,7 +177,7 @@ class CaVaRetokenizer(Tokenizer):
         self.merge_spans(self.date_matcher(doc), doc, 'date')
         self.merge_spans(self.decimal_matcher(doc), doc, 'decimal')
         self.merge_spans(self.time_matcher(doc), doc, 'time')
-        self.merge_spans(self.other(doc), doc)
+        self.merge_spans(self.sci_not_matcher(doc), doc, 'sci_not')
         self.mark_queries(self.query_matcher(doc), doc)
         return doc
 
@@ -193,13 +211,24 @@ def add_ecog_ent(matcher, doc, i, matches):
     
 
 class ValueExtractor:
-    def __init__(self, vocab, token_label, value_label, token_patterns, value_patterns):
+    def __init__(self, 
+                 vocab, 
+                 token_label, 
+                 value_label, 
+                 token_patterns, 
+                 value_patterns, 
+                 entity_label="",
+                 norm_label="", 
+                 norm_patterns=None):
         
         self.token_label = token_label
         self.value_label = value_label
+        self.entity_label = entity_label
+        self.norm_label = norm_label
 
         self.token_patterns = token_patterns # include patterns that you want for the full token including label and value
         self.value_patterns = value_patterns # what portion of the token should be pulled out as numeric
+        self.norm_patterns = norm_patterns   # if set, the normalised form of the token without numeric portion
 
         # Register a new token extension to flag ecog status custom attribute
         Token.set_extension(token_label, default=False, force=True)
@@ -209,8 +238,18 @@ class ValueExtractor:
         self.label_matcher.add(token_label, token_patterns)#, on_match=add_ecog_ent)
         self.value_matcher = Matcher(vocab)
         self.value_matcher.add(value_label, value_patterns)#, on_match=get_ecog_value)
+        self.norm_matcher = None
+        if norm_patterns:
+            self.norm_matcher = Matcher(vocab)
+            self.norm_matcher.add(norm_label, norm_patterns)
 
-    
+    def set_entity(self, doc, matches):
+        for (m_id, start, end) in matches:
+            if get_widest_match(start, end, matches):
+                if self.entity_label != "":
+                    entity = Span(doc, start, end, label=self.entity_label)
+                    doc.ents += (entity,)
+        
     def get_token_spans(self, doc):
         matches = self.label_matcher(doc) 
         spans = []  # Collect the matched spans here
@@ -220,14 +259,14 @@ class ValueExtractor:
 
     def split_dates(self, doc):
         with doc.retokenize() as retokenizer:
-            spans, _ = self.get_ecog_spans(doc)
+            spans, _ = self.get_token_spans(doc)
             for span in spacy.util.filter_spans(spans):
                 for tok in span:
                     if tok._.date:
                         retokenizer.split(tok, [v for v in tok.text], heads=[tok]*len(tok.text))
                         
     def unset_dates(self, doc):
-        spans, _ = self.get_ecog_spans(doc)
+        spans, _ = self.get_token_spans(doc)
         for span in spacy.util.filter_spans(spans):
             for tok in span:
                 try:
@@ -239,51 +278,88 @@ class ValueExtractor:
         # This method is invoked when the component is called on a Doc
 
         spans, matches = self.get_token_spans(doc)
-        for (m_id, start, end) in matches:
-            if get_widest_match(start, end, matches):
-                entity = Span(doc, start, end, label='UNIT_VALUE')
-                doc.ents += (entity,)
+        self.set_entity(doc, matches)
+
         with doc.retokenize() as retokenizer:
             for span in spacy.util.filter_spans(spans):
                 value_matches = self.value_matcher(span)
                 values = [-1]
                 for value_id, v_start, v_end in value_matches:
                     try:
-                        values.append(int(span[v_start:v_end].text))
+                        values.append(int(span[v_start:v_end].text.replace(',', '')))
                     except:
-                        values.append(0) # the only non-numeric entries currently tolerated are 'zero' or 'o'
-                retokenizer.merge(span)
+                        try:
+                            values.append(float(span[v_start:v_end].text.replace(',', '')))
+                        except:
+                            if any([t._.sci_not for t in span[v_start:v_end]]):
+                                values = [span[v_start:v_end].text] # if scientific notation we currently return value as string
+                            else:
+                                values.append(0) # the only non-numeric entries currently tolerated are 'zero' or 'o'
+                if self.norm_matcher:
+                    norm_matches = self.norm_matcher(span)
+                    norm = ''.join([span[n_start:n_end].text for norm_id, n_start, n_end in norm_matches])
+                else:
+                    norm = span.text
+                retokenizer.merge(span, attrs={"NORM": norm})
                 for tok in span:
-                    tok._.set(self.token_label) = True  
-                    tok._.unit_value = max(values)#set(self.value_label) = max(values)
+                    tok._.set(self.token_label, True) 
+                    tok._.set(self.value_label, max(values))
         return doc
 
 
 class UnitValue(ValueExtractor):
     def __init__(self, vocab, *args, **kwargs):
         
-        unit_patterns = [[{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}, 
+        unit_patterns = [[{"IS_DIGIT": True, "OP": "?"},
+                          {"_":{"sci_not": True}, "OP": "?"},
+                          {"TEXT": {"REGEX": units_regex}, "OP": "?"}, 
                           {"LOWER": {"IN": ["/", "per"]}}, # 100mg/mL, 10mg/100mL, 10 mg per L...
                           {"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}],
-                         [{"IS_DIGIT": True, "OP": "?"}, {"TEXT": {"REGEX": units_regex}}], # 20L, 50 mg
-                         [{"_": {"decimal": True}},
+                         [{"IS_DIGIT": True, "OP": "?"}, 
+                          {"_":{"sci_not": True}, "OP": "?"},
+                          {"TEXT": {"REGEX": units_regex}}], # 20L, 50 mg
+                         [{"_": {"decimal": True}}, 
+                          {"_":{"sci_not": True}, "OP": "?"}, 
                           {"TEXT": {"REGEX": units_regex}}],
-                         [{"IS_DIGIT": True, "OP": "?"}, {"NORM": "unit_num"}, {"LOWER": {"IN": ["/", "per"]}}, {"NORM": "unit_denom"}]] # 3.5cm
+                         [{"_": {"decimal": True}}, 
+                          {"_":{"sci_not": True}, "OP": "?"}, 
+                          {"TEXT": {"REGEX": units_regex}, "OP": "?"}, 
+                          {"LOWER": {"IN": ["/", "per"]}}, # 100mg/mL, 10mg/100mL, 10 mg per L...
+                          {"IS_DIGIT": True, "OP": "?"}, 
+                          {"TEXT": {"REGEX": units_regex}}],
+                         [{"IS_DIGIT": True, "OP": "?"}, 
+                          {"_":{"sci_not": True}, "OP": "?"},
+                          {"NORM": "unit_num"}, 
+                          {"LOWER": {"IN": ["/", "per"]}}, {"NORM": "unit_denom"}],
+                          [{"_": {"decimal": True}}, 
+                           {"_":{"sci_not": True}, "OP": "?"},
+                           {"NORM": "unit_num"}, 
+                           {"LOWER": {"IN": ["/", "per"]}}, 
+                           {"NORM": "unit_denom"}]] 
                 
         
         # to match just the numeric portion within an ECOG status entity
-        unit_val_patterns = [[{"IS_DIGIT": True}], 
+        unit_val_patterns = [[{"IS_DIGIT": True}, {"_":{"sci_not": True}, "OP": "?"}],
+                             [{"_": {'decimal': True}}, {"_":{"sci_not": True}, "OP": "?"}], 
                              [{"LOWER": {"IN": ["zero", "o"]}}],
                              [{"_": {'date': True}, 'LENGTH': 3}]]
+
+        unit_norm_patterns = [[{"IS_DIGIT": False,
+                                 "_": {"decimal": False, "date": False, "sci_not": False},
+                                 "LOWER": {"NOT_IN": ["zero", "o"]}}]]
+
         super(UnitValue, self).__init__(vocab=vocab, 
                                         token_label='unit', 
                                         value_label='unit_value', 
                                         token_patterns=unit_patterns, 
-                                        value_patterns=unit_val_patterns)
+                                        value_patterns=unit_val_patterns,
+                                        norm_patterns=unit_norm_patterns,
+                                        norm_label='unit_norm')
 
 
-class ECOGStatus:
-    def __init__(self, vocab):
+
+class ECOGStatus(ValueExtractor):
+    def __init__(self, vocab, *args, **kwargs):
         
                         # matches the following forms (with or without punctuation like :, -, =)
                             # ecog 4
@@ -360,37 +436,12 @@ class ECOGStatus:
                              [{"LOWER": {"IN": ["zero", "o"]}}],
                              [{"_": {'date': True}, 'LENGTH': 3}]]
 
-        # Register a new token extension to flag ecog status custom attribute
-        Token.set_extension("ecog_status", default=False)
-        Token.set_extension("ecog_status_value", default=-1)
-        self.ecog_matcher = Matcher(vocab)
-        self.ecog_matcher.add("ecog", ecog_patterns)#, on_match=add_ecog_ent)
-        self.ecog_value = Matcher(vocab)
-        self.ecog_value.add("ecog", ecog_val_patterns)#, on_match=get_ecog_value)
-
-    def get_ecog_spans(self, doc):
-        matches = self.ecog_matcher(doc) 
-        spans = []  # Collect the matched spans here
-        for match_id, start, end in matches:
-            spans.append(doc[start:end])
-        return spans, matches
-
-    def split_dates(self, doc):
-        with doc.retokenize() as retokenizer:
-            spans, _ = self.get_ecog_spans(doc)
-            for span in spacy.util.filter_spans(spans):
-                for tok in span:
-                    if tok._.date:
-                        retokenizer.split(tok, [v for v in tok.text], heads=[tok]*len(tok.text))
-                        
-    def unset_dates(self, doc):
-        spans, _ = self.get_ecog_spans(doc)
-        for span in spacy.util.filter_spans(spans):
-            for tok in span:
-                try:
-                    tok._.set('date', False)   
-                except:
-                    ...
+        super(ECOGStatus, self).__init__(vocab=vocab, 
+                                         token_label='ecog_status', 
+                                         value_label='ecog_status_value', 
+                                         token_patterns=ecog_patterns, 
+                                         value_patterns=ecog_val_patterns, 
+                                         entity_label='ECOG_STATUS')
 
     def __call__(self, doc):
         # This method is invoked when the component is called on a Doc
@@ -400,34 +451,8 @@ class ECOGStatus:
         self.split_dates(doc)
         self.unset_dates(doc)
 
-        spans, matches = self.get_ecog_spans(doc)
-        for (m_id, start, end) in matches:
-            if get_widest_match(start, end, matches):
-                entity = Span(doc, start, end, label='ECOG_STATUS')
-                doc.ents += (entity,)
-        with doc.retokenize() as retokenizer:
-            for span in spacy.util.filter_spans(spans):
-                value_matches = self.ecog_value(span)
-                values = [-1]
-                for value_id, v_start, v_end in value_matches:
-                    try:
-                        values.append(int(span[v_start:v_end].text))
-                    except:
-                        values.append(0) # the only non-numeric entries currently tolerated are 'zero' or 'o'
-                retokenizer.merge(span)
-                for token in span:
-                    token._.ecog_status = True  
-                    token._.ecog_status_value = max(values)
-        return doc
+        return super(ECOGStatus, self).__call__(doc)
 
-
-# def add_ecog_ent(matcher, doc, i, matches):
-#     # Get the current match and create tuple of entity label, start and end.
-#     # Append entity to the doc's entity. (Don't overwrite doc.ents!)
-#     match_id, start, end = matches[i]
-#     if get_widest_match(start, end, matches):
-#         entity = Span(doc, start, end, label="ECOG_STATUS")
-#         doc.ents += (entity,)
 
 class CaVaLangDefaults(English.Defaults):
     # nixing emoji special cases because they don't matter in this context, and much more likely to be a true equals or a true colon

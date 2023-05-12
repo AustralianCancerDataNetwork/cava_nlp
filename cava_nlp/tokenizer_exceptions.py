@@ -44,7 +44,7 @@ months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'sept',
           'january', 'february', 'march', 'april', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 #ordinal = '\d{1,2}(?:[stndrh]){2}?'
 ordinal = '^([stndrh]{2})$'
-
+scientific_notation = '^x?10\^\d+$'
 times = ['am', 'a.m.', 'a.m', 'pm', 'p.m.', 'p.m']
 # single alpha char with no whitespace to merge abbreviatons like p.o. or i.v.
 abbv = r'^[a-zA-Z]$'
@@ -56,7 +56,6 @@ emails = r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9]+(\.[A-Za-z]{2,3})+'
 # create special cases for cancer staging
 for stage in stage_exceptions:
     special_cases.append([stage, [{ORTH: stage, NORM: 'stage'}]])
-
 
 # other special cases for cancer-specific vocabulary
 for term in special_vocab:
