@@ -25,7 +25,8 @@ special_cases = [
 
 # added special cases to capture units with a slash in the middle
 units_num = ['mg', 'mcg', 'g', 'units', 'u', 'mgs', 'mcgs', 'gram', 'grams', 'mG', 'mL', 'mol']
-units_denom = ['mg', 'mgc', 'g', 'kg', 'ml', 'l', 'm2', 'm^2', 'hr', 'liter', 'gram', 'L', 'mL', 'KG', 'mG', 'kG']
+units_denom = ['mg', 'mgc', 'g', 'kg', 'ml', 'l', 'm2', 'm^2', 'hr', 'liter', 'gram', 'L', 'mL', 'KG', 
+               'mG', 'kG', 'kilogram', 'lb', 'pounds', 'lbs', 'kilos', 'Kg']
 unit_suffix = []
 
 for a in units_num:
@@ -37,6 +38,9 @@ for a in units_num:
 units_regex = '|'.join([f'{u}' for u in units_denom])
 units_regex = f'^(\d+)?({units_regex})$'
 
+weight_units = ['kg', 'kilo', 'kilos', 'g', 'gr', 'kilogram', 'kilograms', 'kgs', 
+                'BMI', 'bmi', 'lb', 'lbs', 'pounds', 'KG','Kg', 'kG']
+
 year_regex = '(^(19|20)\d\d$|^\d?\d$)'
 numeric_month_regex = '(^[0-1]?\d$)'
 day_regex = '(^[0-3]?\d$)'
@@ -45,14 +49,14 @@ months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'sept',
 #ordinal = '\d{1,2}(?:[stndrh]){2}?'
 ordinal = '^([stndrh]{2})$'
 scientific_notation = '^x?10\^\d+$'
-times = ['am', 'a.m.', 'a.m', 'pm', 'p.m.', 'p.m']
+times = ['am', 'a.m.', 'a.m', 'pm', 'p.m.', 'p.m', 'hrs', 'hr', 'o\'clock', 'oclock']
 # single alpha char with no whitespace to merge abbreviatons like p.o. or i.v.
 abbv = r'^[a-zA-Z]$'
 # alpha string of arbitrary length with no whitespace as 2nd part of abbreviations like o/night b'fast 
 no_whitespace = r'^[a-zA-Z]+$'
 # email regex
-emails = r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9]+(\.[A-Za-z]{2,3})+'
-
+# emails = r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9]+(\.[A-Za-z]{2,3})+' - this version caused catastrophic backtracking on long strings
+emails = r'\w+(?:[.-]\w+)*@\w+(?:[.-]\w+)*(?:\.\w{2,3})+'
 # create special cases for cancer staging
 for stage in stage_exceptions:
     special_cases.append([stage, [{ORTH: stage, NORM: 'stage'}]])
