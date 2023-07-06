@@ -21,4 +21,6 @@ stage_exceptions = ['ct1c', 'ct3', 'ctx', 'ct4', 'ct2', 'ct4b', 'ct4a', 'ct2a',
        'n3c', 'n0(i-)', 'n1c', 'n3nos', 'n0(mol-)', 'n0(mol+)', '0i',
        'm0', 'm1', 'm1b', 'm1a', 'm1c', 'm1nos', 'm1d', '1d', 'iii']
 
+genetic_exceptions = ['HER2']
+
 special_vocab = ['C1D1', 'o\'clock']

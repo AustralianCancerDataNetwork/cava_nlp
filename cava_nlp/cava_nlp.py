@@ -1,4 +1,4 @@
-import spacy, re
+import spacy, re, medspacy
 from spacy.lang.en import English
 from spacy.symbols import ORTH, NORM
 from striprtf.striprtf import rtf_to_text
@@ -11,6 +11,8 @@ from spacy.lang.en import English, TOKENIZER_EXCEPTIONS
 from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, \
                                   times, abbv, no_whitespace, emails, day_regex, year_regex, \
                                   numeric_month_regex, scientific_notation, weight_units
+from .sectionizer_config import get_sectionizer_attrs, get_sectionizer_patterns
+from .context_config import get_context_attrs, get_context_patterns
 
 # retokeniser that allows us to tokenise brutally in the first step (e.g. all slashes, all periods, all commas)
 # and then reassemble important tokens that shouldn't be broken up such as decimal numbers, units that don't
@@ -92,7 +94,7 @@ class CaVaRetokenizer(Tokenizer):
         dp = [[],[]] # dates must either start sentence or have preceding space, to avoid false pos with spinal notation e.g. C3/4
         for d in date_patterns:
             dp[0].append([{"SPACY": True}] + d)
-            dp[0].append([{"TEXT": {"IN": ["\n", "\n\n"]}}] + d)
+            dp[0].append([{"TEXT": {"IN": ["\n", "\n\n", '-']}}] + d)
             sent_start = [attr.copy() for attr in d]
             sent_start[0]["IS_SENT_START"] = True
             dp[1].append(sent_start)
@@ -183,402 +185,6 @@ class CaVaRetokenizer(Tokenizer):
 # @Language.factory("oral_meds")
 # def ..
 
-# rule-based matcher for extracting ecog status
-@Language.factory("ecog_status")
-def create_ecog_status(nlp, name):
-    return ECOGStatus(nlp.vocab)
-
-@Language.factory("unit_value")
-def create_unit_value(nlp, name):
-    return UnitValue(nlp.vocab)
-
-@Language.factory("weight_value")
-def create_weight_value(nlp, name):
-    return WeightValue(nlp.vocab)
-
-@Language.factory("pgsga_value")
-def create_pgsga_value(nlp, name):
-    return PGSGAValue(nlp.vocab)
-
-@Language.factory("feeding_tube_value")
-def create_feeding_tube(nlp, name):
-    return FeedingTube(nlp.vocab)
-
-
-def get_widest_match(start, end, matches):
-    for _, s, e in matches:
-        if s<start<e or s<end<e:
-            if e-s > end-start:
-                return False
-    return True
-
-def add_ecog_ent(matcher, doc, i, matches):
-    # Get the current match and create tuple of entity label, start and end.
-    # Append entity to the doc's entity. (Don't overwrite doc.ents!)
-    match_id, start, end = matches[i]
-    if get_widest_match(start, end, matches):
-        entity = Span(doc, start, end, label="ECOG_STATUS")
-        doc.ents += (entity,)
-
-
-def is_within(ex_m, match):
-    return (ex_m[1] >= match[1] and ex_m[2] <= match[2]) or (ex_m[1] <= match[1] and ex_m[2] >= match[2])
-    
-
-class LabelMatcher:
-    def __init__(self, 
-                 vocab, 
-                 token_label, 
-                 token_patterns, 
-                 merge_ents = True,
-                 entity_label=""):
-        self.token_label = token_label
-        self.entity_label = entity_label
-        self.token_patterns = token_patterns # include patterns that you want for the full token including label and value
-
-        self.label_matcher = Matcher(vocab)
-        self.label_matcher.add(token_label, token_patterns)
-        self.exclusion_matcher = None
-        self.merge_ents = merge_ents
-
-        Token.set_extension(token_label, default=False, force=True)
-
-
-    def set_entity(self, doc, matches):
-        for (m_id, start, end) in matches:
-            if get_widest_match(start, end, matches):
-                if self.entity_label != "":
-                    entity = Span(doc, start, end, label=self.entity_label)
-                    doc.ents += (entity,)
-        
-    def get_token_spans(self, doc):
-        spans, filtered_matches = [], []
-        matches = self.label_matcher(doc) 
-        # if we have set an exclusionary token that overlaps with the match, we will filter here 
-        # e.g. 'performance status: 1' is valid ecog but want to exclude the strings 
-        # 'karnofsky performance status: 1' or 'nodal performance status: 1', which can only be done post-hoc
-        excl_match = self.exclusion_matcher(doc) if self.exclusion_matcher else []
-        for m in matches:
-            if get_widest_match(m[1], m[2], matches):
-                excluded = any([is_within(ex, m) for ex in excl_match])
-                if not excluded:
-                    filtered_matches.append(m)
-                    spans.append(doc[m[1]:m[2]])
-        return spans, filtered_matches
-
-    def split_token(self, doc, lab):
-        with doc.retokenize() as retokenizer:
-            spans, _ = self.get_token_spans(doc)
-            for span in spacy.util.filter_spans(spans):
-                for tok in span:
-                    if tok._.__getattr__(lab):
-                        retokenizer.split(tok, [v for v in tok.text], heads=[tok]*len(tok.text))
-                        
-    def unset_token(self, doc, lab):
-        spans, _ = self.get_token_spans(doc)
-        for span in spacy.util.filter_spans(spans):
-            for tok in span:
-                try:
-                    tok._.set(lab, False)   
-                except:
-                    ...
-
-    
-    def __call__(self, doc):
-        
-        spans, matches = self.get_token_spans(doc)
-        self.set_entity(doc, matches)
-
-        with doc.retokenize() as retokenizer:
-            for span in spacy.util.filter_spans(spans):
-                for tok in span:
-                    tok._.set(self.token_label, True) 
-                if self.merge_ents:
-                    retokenizer.merge(span)
-        return doc
-
-
-class ValueExtractor(LabelMatcher):
-    def __init__(self, 
-                 vocab, 
-                 token_label, 
-                 value_label, 
-                 token_patterns, 
-                 value_patterns, 
-                 entity_label="",
-                 norm_label="", 
-                 norm_patterns=None,
-                 exclusion_patterns=None):
-
-        super(ValueExtractor, self).__init__(vocab=vocab, 
-                                             token_label=token_label, 
-                                             token_patterns=token_patterns, 
-                                             entity_label=entity_label)
-  
-        self.value_label = value_label
-        self.norm_label = norm_label
-        self.value_patterns = value_patterns # what portion of the token should be pulled out as numeric
-        self.norm_patterns = norm_patterns   # if set, the normalised form of the token without numeric portion
-        self.exclusion_patterns = exclusion_patterns   # if set, the normalised form of the token without numeric portion
-
-        Token.set_extension(value_label, default=-1, force=True )
-        
-        self.value_matcher = Matcher(vocab)
-        self.value_matcher.add(value_label, value_patterns)#, on_match=get_ecog_value)
-        self.norm_matcher = None
-        self.exclusion_matcher = None
-        if norm_patterns:
-            self.norm_matcher = Matcher(vocab)
-            self.norm_matcher.add(norm_label, norm_patterns)
-        if exclusion_patterns:
-            self.exclusion_matcher = Matcher(vocab)
-            self.exclusion_matcher.add('exclude', exclusion_patterns)
-
-    def __call__(self, doc):
-
-        spans, matches = self.get_token_spans(doc)
-        self.set_entity(doc, matches)
-
-        with doc.retokenize() as retokenizer:
-            for span in spacy.util.filter_spans(spans):
-                value_matches = self.value_matcher(span)
-                values = [-1]
-                for value_id, v_start, v_end in value_matches:
-                    try:
-                        values.append(int(span[v_start:v_end].text.replace(',', '')))
-                    except:
-                        try:
-                            values.append(float(span[v_start:v_end].text.replace(',', '')))
-                        except:
-                            if span[v_start:v_end].text.lower() in ['zero', 'o']:
-                                values.append(0)
-                            #if any([t._.sci_not for t in span[v_start:v_end]]):
-                            else:
-                                values = [span[v_start:v_end].text] # if scientific notation we currently return value as string
-                            
-                if self.norm_matcher:
-                    norm_matches = self.norm_matcher(span)
-                    norm = ''.join([span[n_start:n_end].text for norm_id, n_start, n_end in norm_matches])
-                else:
-                    norm = span.text.lower()
-                retokenizer.merge(span, attrs={"NORM": norm})
-                for tok in span:
-                    tok._.set(self.token_label, True) 
-                    tok._.set(self.value_label, max(values))
-        return doc
-
-
-class WeightValue(LabelMatcher):
-    def __init__(self, vocab, *args, **kwargs):
-        
-        weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
-
-        super(WeightValue, self).__init__(vocab=vocab, 
-                                          token_label='weight', 
-                                          token_patterns=weight_patterns, 
-                                          entity_label='weight',
-                                          merge_ents=False)
-                     
-
-class PGSGAValue(ValueExtractor):
-    def __init__(self, vocab, *args, **kwargs):
-        
-        pgsga_patterns = [[{"LOWER": {"IN": ['pg', 'pgsga']}},
-                           {"TEXT": {"IN": ["-", '_']}, "OP": "?"},
-                           {"LOWER": "sga", "OP": "?"},
-                           {"LOWER": {"IN": ["score", ":", "=", "rating"]}, "OP": "?"},
-                           {"IS_DIGIT": True},
-                           {"TEXT": "/",  "OP": "?"},
-                           {"LOWER": {"IN": ['a', 'b', 'c']}}],
-                          [{"LOWER": {"IN": ['pg', 'pgsga']}},
-                           {"TEXT": {"IN": ["-", '_']}, "OP": "?"},
-                           {"LOWER": "sga", "OP": "?"},
-                           {"LOWER": {"IN": ["score", ":", "=", "rating"]}, "OP": "?"},
-                           {"LOWER": {"IN": ['a', 'b', 'c']}},
-                           {"TEXT": "/",  "OP": "?"},
-                           {"IS_DIGIT": True}]] 
-                
-        
-        # to match just the numeric portion within an ECOG status entity
-        pgsga_val_patterns = [[{"IS_DIGIT": True},
-                               {"TEXT": "/",  "OP": "?"},
-                               {"LOWER": {"IN": ['a', 'b', 'c']}}],
-                              [{"LOWER": {"IN": ['a', 'b', 'c']}},
-                               {"TEXT": "/",  "OP": "?"},
-                               {"IS_DIGIT": True}]]
-
-        super(PGSGAValue, self).__init__(vocab=vocab, 
-                                          token_label='pgsga', 
-                                          value_label='pgsga_value', 
-                                          token_patterns=pgsga_patterns, 
-                                          value_patterns=pgsga_val_patterns)
-
-
-class FeedingTube(LabelMatcher):
-    def __init__(self, vocab, *args, **kwargs):
-        
-        feeding_tube_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 'tube'}],
-                                 [{"LOWER": {"IN": ['i', 'r']}},
-                                  {"LOWER": {"IN": ['/']}},
-                                  {"LOWER": {"IN": ['o']}},
-                                  {"LOWER": {"IN": ['peg', 'ngt', 'rig', 'pej']}}],
-                                 [{"LOWER": {"IN": ['peg', 'ngt', 'rig', 'pej']}}],
-                                 [{"LOWER": {"FUZZY2": 'nasogastric'}}, {'LOWER': 'tube', "OP": "?"}],
-                                 [{"LOWER": {"FUZZY2": {'IN': ['radiological', 'percutaneous', 'balloon', 'surgical']}}, "OP": '?'},
-                                  {"LOWER": {"FUZZY2": {'IN': ['inserted', 'endoscopic']}}, "OP": '?'},
-                                  {"LOWER": {"FUZZY2": {'IN': ['gastrostomy', 'jejunostomy']}}}]] 
-                
-        
-        super(FeedingTube, self).__init__(vocab=vocab, 
-                                          token_label='feeding_tube', 
-                                          token_patterns=feeding_tube_patterns, 
-                                          entity_label='feeding_tube')
-
-
-class UnitValue(ValueExtractor):
-    def __init__(self, vocab, *args, **kwargs):
-        
-        unit_patterns = [[{"IS_DIGIT": True, "OP": "?"},
-                          {"_":{"sci_not": True}, "OP": "?"},
-                          {"TEXT": {"REGEX": units_regex}, "OP": "?"}, 
-                          {"LOWER": {"IN": ["/", "per"]}}, # 100mg/mL, 10mg/100mL, 10 mg per L...
-                          {"IS_DIGIT": True, "OP": "?"}, 
-                          {"TEXT": {"REGEX": units_regex}}],
-                         [{"IS_DIGIT": True, "OP": "?"}, 
-                          {"_":{"sci_not": True}, "OP": "?"},
-                          {"TEXT": {"REGEX": units_regex}}], # 20L, 50 mg
-                         [{"_": {"decimal": True}}, 
-                          {"_":{"sci_not": True}, "OP": "?"}, 
-                          {"TEXT": {"REGEX": units_regex}}],
-                         [{"_": {"decimal": True}}, 
-                          {"_":{"sci_not": True}, "OP": "?"}, 
-                          {"TEXT": {"REGEX": units_regex}, "OP": "?"}, 
-                          {"LOWER": {"IN": ["/", "per"]}}, # 100mg/mL, 10mg/100mL, 10 mg per L...
-                          {"IS_DIGIT": True, "OP": "?"}, 
-                          {"TEXT": {"REGEX": units_regex}}],
-                         [{"IS_DIGIT": True, "OP": "?"}, 
-                          {"_":{"sci_not": True}, "OP": "?"},
-                          {"NORM": "unit_num"}, 
-                          {"LOWER": {"IN": ["/", "per"]}}, 
-                          {"NORM": "unit_denom"}],
-                          [{"_": {"decimal": True}}, 
-                           {"_":{"sci_not": True}, "OP": "?"},
-                           {"NORM": "unit_num"}, 
-                           {"LOWER": {"IN": ["/", "per"]}}, 
-                           {"NORM": "unit_denom"}],
-                           [{"LOWER": "bmi"},
-                            {"TEXT": {"IN": ['-', '=', '~', ':', '>', '<']}, "OP": "?"},
-                            {"IS_DIGIT": True}],
-                           [{"LOWER": "bmi"},
-                            {"TEXT": {"IN": ['-', '=', '~', ':', '>', '<']}, "OP": "?"},
-                            {"_": {"decimal": True}}]] 
-                        
-        unit_val_patterns = [[{"IS_DIGIT": True}, {"_":{"sci_not": True}, "OP": "?"}],
-                             [{"_": {'decimal': True}}, {"_":{"sci_not": True}, "OP": "?"}], 
-                             [{"LOWER": {"IN": ["zero", "o"]}}],
-                             [{"_": {'date': True}, 'LENGTH': 3}]]
-
-        unit_norm_patterns = [[{"IS_DIGIT": False,
-                                 "_": {"decimal": False, "date": False, "sci_not": False},
-                                 "LOWER": {"NOT_IN": ["zero", "o", '-', '=', '~', ':', '>', '<']}}]]
-
-        unit_exclusion_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 'tube'}]]
-
-        super(UnitValue, self).__init__(vocab=vocab, 
-                                        token_label='unit', 
-                                        value_label='unit_value', 
-                                        token_patterns=unit_patterns, 
-                                        value_patterns=unit_val_patterns,
-                                        norm_patterns=unit_norm_patterns,
-                                        exclusion_patterns=unit_exclusion_patterns,
-                                        norm_label='unit_norm')
-
-
-
-class ECOGStatus(ValueExtractor):
-    def __init__(self, vocab, *args, **kwargs):
-        
-        # matches the following forms (with or without punctuation like :, -, =)
-            # ecog 4
-            # ecog performance status of 4
-            # ecog ps 4
-            # ecog4
-            # ecog=4
-            # ecog-4
-            # ecog :4
-
-        ecog_exclusion = [{"TEXT": {"FUZZY": {"IN": ["karnofsky", "nodal", "nutrition", "receptor"]}}}]
-
-        ecog_preface = [{"LOWER": "ecog"}, 
-                        {"LOWER": {"IN": ["performance", "status", "ps"]}, "OP": "?"}, 
-                        {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 
-                        {"LOWER": {"IN": ["is", "now", "=", "still", "of", "~", "currently", "has", "remains", "between", "around", "normally", "was", "improved"]}, "OP": "?"}, \
-                        {"LOWER": {"IN": ["been", "at","to", "was"]}, "OP": "?"}, 
-                        {"LOWER": {"IN": ["least"]}, "OP": "?"}, 
-                        {"IS_PUNCT": True, "OP": "?"}]
-
-        ps_preface = [{"LOWER": {"IN": ["performance", "status", "ps"]}}, 
-                      {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 
-                      {"LOWER": {"IN": ["is", "now", "=", "still", "of", "~", "currently", "has", "remains", "normally", "was", "improved"]}, "OP": "?"}, \
-                      {"LOWER": {"IN": ["been", "at","to", "was"]}, "OP": "?"}, 
-                      {"LOWER": {"IN": ["least"]}, "OP": "?"}, 
-                      {"IS_PUNCT": True, "OP": "?"}]
-
-        ecog_patterns = [# ecog_preface + [{"IS_DIGIT": True}],
-                         # rare but occasional ecog 2.5
-                         ecog_preface + [{"_": {'decimal': True}}], 
-                         # special case for when ECOG of 0 is entered as ECOG of O (letter o instead of zero) or written in full
-                         ecog_preface + [{"LOWER": {"IN": ["o", "zero", "0", "1", "2", "3", "4"]}}], 
-                         # matches additional forms with range e.g. between 1 and 2, 1 to 2
-                         ecog_preface + [{"IS_DIGIT": True}, 
-                                         {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
-                                         {"IS_DIGIT": True}], 
-                         # special case to handle the fact that retokenisation may merge ranges if of the form 1-2 if they meet criteria for date entity
-                         ecog_preface + [{"_": {'date': True}, 'LENGTH': 3}],
-                         # repeat the above except performance status 2, ps=2 without leading 'ecog'
-                         # ps_preface + [{"IS_DIGIT": True}],
-                         ps_preface + [{"_": {'decimal': True}}], 
-                         ps_preface + [{"LOWER": {"IN": ["o", "zero",  "0", "1", "2", "3", "4"]}}], 
-                         ps_preface + [{"IS_DIGIT": True}, \
-                                         {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
-                                         {"IS_DIGIT": True}], 
-                         ps_preface + [{"_": {'date': True}, 'LENGTH': 3}],
-                        # repeat the above except with the exclusion token target
-                         ecog_exclusion + ps_preface + [{"IS_DIGIT": True}],
-                         ecog_exclusion + ps_preface + [{"_": {'decimal': True}}], 
-                         ecog_exclusion + ps_preface + [{"LOWER": {"IN": ["o", "zero"]}}], 
-                         ecog_exclusion + ps_preface + [{"IS_DIGIT": True}, \
-                                                        {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
-                                                        {"IS_DIGIT": True}], 
-                         ecog_exclusion + ps_preface + [{"_": {'date': True}, 'LENGTH': 3}]]
-        
-        # to match just the numeric portion within an ECOG status entity
-        ecog_val_patterns = [[{"TEXT": {"IN": ['0','1','2','3','4']}}], 
-                             [{"LOWER": {"IN": ["zero", "o"]}}]]#,
-                            # [{"_": {"decimal": True}}]]
-                             #[{"_": {'date': True}, 'LENGTH': 3}]]
-
-        super(ECOGStatus, self).__init__(vocab=vocab, 
-                                         token_label='ecog_status', 
-                                         value_label='ecog_status_value', 
-                                         token_patterns=ecog_patterns, 
-                                         value_patterns=ecog_val_patterns, 
-                                         entity_label='ECOG_STATUS',
-                                         exclusion_patterns=[ecog_exclusion])
-
-    def __call__(self, doc):
-        # This method is invoked when the component is called on a Doc
-
-        # Because of special cases such as ecog 1/2, which will match the 2nd token as a date
-        # value, we have to force split and unset any dates within the matched ecog status        
-        self.split_token(doc, 'date')
-        self.unset_token(doc, 'date')    
-        self.split_token(doc, 'decimal')
-        self.unset_token(doc, 'decimal')
-
-        return super(ECOGStatus, self).__call__(doc)
-
-
 class CaVaLangDefaults(English.Defaults):
     # nixing emoji special cases because they don't matter in this context, and much more likely to be a true equals or a true colon
     #English.Defaults.tokenizer_exceptions = {rule: case for rule, case in English.Defaults.tokenizer_exceptions.items() if rule[0] != ':' and rule[0] != '='}
@@ -597,8 +203,6 @@ class CaVaLangDefaults(English.Defaults):
     # we are unlikely to care about urls more than we care about sloppy sentence boundaries and missing whitespace around periods
     url_match = None
     create_tokenizer = create_tokenizer
-
-
 
 # consider moving these preprocessor steps into a medspacy PreprocessingRule?
 
@@ -653,16 +257,27 @@ class CaVaLang(English):
     lang = 'cava_lang'
     Defaults = CaVaLangDefaults
 
-    def __call__(self, text, keep_whitespace=False, *args, **kwargs):
+    def __init__(self, with_section_context=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # we default to medspacy sentencizer as it's much better than the spacy one for clinical text - pysbd handles
+        # new lines more intelligently than pyrush
+        self.add_pipe('medspacy_pysbd')
+        if with_section_context:
+            #medspacy.load(self, medspacy_disable=['medspacy_tokenizer', 'medspacy_context', 'medspacy_target_matcher'])
+            sectionizer = self.add_pipe('medspacy_sectionizer', config={'rules': None, 'span_attrs': get_sectionizer_attrs()})
+            sectionizer.add(get_sectionizer_patterns())
+            context = self.add_pipe('medspacy_context', config={'span_attrs': get_context_attrs(), 
+                                                                'rules': str(get_context_patterns())})#, 'terminating_types': {'CURRENT': ['NEW_SECTION'], 'HISTORICAL': ['NEW_SECTION']}})
+
+    def __call__(self, text, whitespace_strip=[' '],  *args, **kwargs):
         # we don't want to preserve repeated whitespace if using matcher, 
         # but we will preserve linebreaks.  other string pre-processing can be added here
 
         # this fails when using pre-annotated text because it actually 
         # reduces the text length which then doesn't align with intended spans
         # so make it optional and default to false
-        if not keep_whitespace:
-            for c in ['\n', ' ']:
-                text = whitespace_preprocess(text, c)
+        for c in whitespace_strip: # intended to be set to either just merging consecutive spaces and/or consecutive linebreaks, or just empty list if we will preserve all - ['\n', ' ']:
+            text = whitespace_preprocess(text, c)
 
         # email pre-processing happens here because we want to tokenise on numbers as infixes
         # so we have too much branching logic to handle emails with numeric elements - bit 
