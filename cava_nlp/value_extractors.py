@@ -6,7 +6,7 @@ from .label_matcher import LabelMatcher
 
 from ._value_extractors import weight_patterns, pgsga_patterns, pgsga_val_patterns, feeding_tube_patterns, \
                                unit_exclusion_patterns, unit_norm_patterns, unit_patterns, unit_val_patterns, \
-                               ecog_patterns, ecog_val_patterns, ecog_exclusion
+                               ecog_patterns, ecog_val_patterns, ecog_exclusion, feeding_tube_exclusion
 
 # rule-based matcher for extracting ecog status
 @Language.factory("ecog_status")
@@ -56,7 +56,8 @@ class FeedingTube(LabelMatcher):
         super(FeedingTube, self).__init__(vocab=vocab, 
                                           token_label='feeding_tube', 
                                           token_patterns=feeding_tube_patterns, 
-                                          entity_label='feeding_tube')
+                                          entity_label='feeding_tube', 
+                                          exclusion_patterns=feeding_tube_exclusion)
 
 
 class UnitValue(ValueExtractor):

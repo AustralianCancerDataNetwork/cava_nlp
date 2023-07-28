@@ -18,16 +18,20 @@ class LabelMatcher:
                  token_label, 
                  token_patterns, 
                  merge_ents = True,
-                 entity_label=""):
+                 entity_label="",
+                 exclusion_patterns=None):
         self.token_label = token_label
         self.entity_label = entity_label
         self.token_patterns = token_patterns # include patterns that you want for the full token including label and value
-
         self.label_matcher = Matcher(vocab)
         self.label_matcher.add(token_label, token_patterns)
-        self.exclusion_matcher = None
+        self.exclusion_patterns = exclusion_patterns # if set, the normalised form of the token without numeric portion
         self.merge_ents = merge_ents
+        self.exclusion_matcher = None
 
+        if exclusion_patterns:
+            self.exclusion_matcher = Matcher(vocab)
+            self.exclusion_matcher.add('exclude', exclusion_patterns)
         Token.set_extension(token_label, default=False, force=True)
 
 

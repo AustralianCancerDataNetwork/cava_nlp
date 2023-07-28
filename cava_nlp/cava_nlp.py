@@ -199,7 +199,8 @@ class CaVaLangDefaults(English.Defaults):
     infixes = (unit_suffix + list(English.Defaults.infixes)  + ['&', '@', '<', '>', ';', r'\(', r'\)', r'\|', '=', ':', ',', r'\.', r'\/', '~',r'\+\+\+', r'\+\+', r'\+', r'\d+', r'\?'] + spacy.lang.char_classes.LIST_HYPHENS)
     # except that we remove standard unit suffixes so that we can handle more precisely
     suffixes = (unit_suffix + [n for n in list(English.Defaults.suffixes) if 'GB' not in n] + ['@', '~', '<', '>', ';', r'\(', r'\)', r'\|', '=', ':', '/', '-', ',', r'\+\+\+', r'\+\+', r'\+', '--'])
-    prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if r'\+' not in x] + ['@', r'\?', '~','<', '>', ';', r'\(', r'\)', r'\|', '-', '=', ':', r'\+\+\+', r'\+\+', r'\+', r'\.', r'\d+', '/'])
+    # note PGSGA special prefixes for handling instances where spaces are missed in the score e.g. PGSGAB12
+    prefixes = (unit_suffix + [x for x in English.Defaults.prefixes if r'\+' not in x] + ['@', r'\?', '~','<', '>', ';', r'\(', r'\)', r'\|', '-', '=', ':', r'\+\+\+', r'\+\+', r'\+', r'\.', r'\d+', '/', 'SGA', 'PGSGA'])
     # we are unlikely to care about urls more than we care about sloppy sentence boundaries and missing whitespace around periods
     url_match = None
     create_tokenizer = create_tokenizer

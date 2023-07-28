@@ -1,40 +1,58 @@
 from .tokenizer_exceptions import weight_units, units_regex
 
-
 weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
 
-pgsga_patterns = [[{"LOWER": {"IN": ['pg', 'pgsga']}},
-                           {"TEXT": {"IN": ["-", '_']}, "OP": "?"},
-                           {"LOWER": "sga", "OP": "?"},
-                           {"LOWER": {"IN": ["score", ":", "=", "rating"]}, "OP": "?"},
-                           {"IS_DIGIT": True},
-                           {"TEXT": "/",  "OP": "?"},
-                           {"LOWER": {"IN": ['a', 'b', 'c']}}],
-                          [{"LOWER": {"IN": ['pg', 'pgsga']}},
-                           {"TEXT": {"IN": ["-", '_']}, "OP": "?"},
-                           {"LOWER": "sga", "OP": "?"},
-                           {"LOWER": {"IN": ["score", ":", "=", "rating"]}, "OP": "?"},
-                           {"LOWER": {"IN": ['a', 'b', 'c']}},
-                           {"TEXT": "/",  "OP": "?"},
-                           {"IS_DIGIT": True}]]                 
-pgsga_val_patterns = [[{"IS_DIGIT": True},
-                        {"TEXT": "/",  "OP": "?"},
-                        {"LOWER": {"IN": ['a', 'b', 'c']}}],
-                        [{"LOWER": {"IN": ['a', 'b', 'c']}},
-                        {"TEXT": "/",  "OP": "?"},
-                        {"IS_DIGIT": True}]]
+pgsga_preface = [{"LOWER": {"IN": ['pg', 'pgsga', 'psgsga', 'sga', 'psga', 'psgag']}},
+                 {"TEXT": {"IN": ["-", '_', ":"]}, "OP": "?"},
+                 {"LOWER": "sga", "OP": "?"},
+                 {"LOWER": {"IN": ["short", "sf"]}, "OP": "?"},
+                 {"LOWER": {"IN": ["score", "rating", "form", "shortform", "from"]}, "OP": "?"},
+                 {"LOWER": "and", "OP": "?"},
+                 {"TEXT": {"IN": ["(", "/"]}, "OP": "?"},
+                 {"LOWER": {"IN": ["score", "rating"]}, "OP": "?"},
+                 {"LOWER": {"IN": ["-", '_', ":", "=", "of"]}, "OP": "?"},
+                 ]
 
+pgsga_val_patterns = [[{"TEXT": {"IN": ["("]}, "OP": "?"}, 
+                       {"IS_DIGIT": True},
+                       {"TEXT": {"IN": ["/", ","]},  "OP": "?"},
+                       {"LOWER": "rating", "OP": "?"},
+                       {"TEXT": {"IN": ["("]}, "OP": "?"}, 
+                       {"LOWER": {"IN": ['a', 'b', 'c']}},
+                       {"TEXT": {"IN": [")"]}, "OP": "?"}],
+                      [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
+                       {"LOWER": {"IN": ['a', 'b', 'c']}},
+                       {"TEXT": {"IN":["/", '-']},  "OP": "?"},
+                       {"TEXT": {"IN": ["("]}, "OP": "?"},
+                       {"IS_DIGIT": True},
+                       {"TEXT": {"IN": [")"]}, "OP": "?"}],
+                      [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
+                       {"LOWER": {"IN": ['a', 'b', 'c']}},                       
+                       {"TEXT": {"IN": [")"]}, "OP": "?"}],
+                      [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
+                       {"IS_DIGIT": True},
+                       {"TEXT": {"IN": [")"]}, "OP": "?"}]]
+        
+
+pgsga_patterns = [pgsga_preface + val for val in pgsga_val_patterns]
+
+# to avoid clashes with the surname 'ng'
+feeding_tube_exclusion = [[{"LOWER": {"IN": ["dr", "mr", "mrs"]}}, {"IS_PUNCT": True, "OP": "?"}]]
 
 feeding_tube_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 'tube'}],
                         [{"LOWER": {"IN": ['i', 'r']}},
-                        {"LOWER": {"IN": ['/']}},
-                        {"LOWER": {"IN": ['o']}},
-                        {"LOWER": {"IN": ['peg', 'ngt', 'rig', 'pej']}}],
-                        [{"LOWER": {"IN": ['peg', 'ngt', 'rig', 'pej']}}],
-                        [{"LOWER": {"FUZZY2": 'nasogastric'}}, {'LOWER': 'tube', "OP": "?"}],
+                         {"LOWER": {"IN": ['/']}},
+                         {"LOWER": {"IN": ['o']}},
+                         {"LOWER": {"IN": ['peg', 'ngt', 'rig', 'pej']}}],
+                        [{"LOWER": {"IN": ["dr", "mr", "mrs"]}, "OP": "?"},
+                         {"LOWER": {"IN": ['peg', 'ngt', 'rig', 'pej', 'ng', 'ngf']}}],
+                        [{"LOWER": {"IN": ['jj', 'tof', 'enteral', 'ng']}}, 
+                         {"LOWER": {"IN": ['tube', 'feed', 'feeding', 'feeds']}}],
+                        [{"LOWER": {"FUZZY2": 'nasogastric'}}, 
+                         {'LOWER': 'tube', "OP": "?"}],
                         [{"LOWER": {"FUZZY2": {'IN': ['radiological', 'percutaneous', 'balloon', 'surgical']}}, "OP": '?'},
-                        {"LOWER": {"FUZZY2": {'IN': ['inserted', 'endoscopic']}}, "OP": '?'},
-                        {"LOWER": {"FUZZY2": {'IN': ['gastrostomy', 'jejunostomy']}}}]] 
+                         {"LOWER": {"FUZZY2": {'IN': ['inserted', 'endoscopic']}}, "OP": '?'},
+                         {"LOWER": {"FUZZY2": {'IN': ['gastrostomy', 'jejunostomy']}}}]] 
 
 
 unit_patterns = [[{"IS_DIGIT": True, "OP": "?"},
@@ -86,16 +104,6 @@ unit_exclusion_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 
 
 ecog_exclusion = [{"TEXT": {"FUZZY": {"IN": ["karnofsky", "nodal", "nutrition", "receptor"]}}}]
 
-        
-# matches the following forms (with or without punctuation like :, -, =)
-    # ecog 4
-    # ecog performance status of 4
-    # ecog ps 4
-    # ecog4
-    # ecog=4
-    # ecog-4
-    # ecog :4
-
 
 ecog_preface = [{"LOWER": "ecog"}, 
                 {"LOWER": {"IN": ["performance", "status", "ps"]}, "OP": "?"}, 
@@ -130,7 +138,7 @@ ecog_patterns = [# rare but occasional ecog 2.5
                                     {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
                                     {"IS_DIGIT": True}], 
                     ps_preface + [{"_": {'date': True}, 'LENGTH': 3}],
-                # repeat the above except with the exclusion token target
+                    # repeat the above except with the exclusion token target
                     ecog_exclusion + ps_preface + [{"IS_DIGIT": True}],
                     ecog_exclusion + ps_preface + [{"_": {'decimal': True}}], 
                     ecog_exclusion + ps_preface + [{"LOWER": {"IN": ["o", "zero"]}}], 
