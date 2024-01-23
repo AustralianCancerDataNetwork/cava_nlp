@@ -36,7 +36,8 @@ def get_sectionizer_patterns():
     patterns += [SectionRule(category='date_time_section', # this is typically copy-pasted content from emails so the datetime should become
                              literal='date_time_section',  # the contextual datetime of the whole section until the next datetime section
                              pattern=line_break + [{"_": {"date":True}}, {"_": {"time":True}}]), 
-                 SectionRule(category='dated_section', literal='dated_section', pattern=line_break + [{"_": {"date":True}}]),
+                 # whereas this one is typically an explicit date used for a sub-section to specify an explicit result
+                 SectionRule(category='date_time_section', literal='dated_section', pattern=line_break + [{"_": {"date":True}}]),
                  SectionRule(category='undated_section', literal='undated_section', pattern=[{"LOWER": {"IN":["\n\n", "\n \n"]}}])]
     return patterns
 

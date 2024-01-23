@@ -36,7 +36,8 @@ setup(
     install_requires=[
         'spacy>=3.4', 
         'medspacy>=1.1',
-        'striprtf'
+        'striprtf',
+        'dateutil'
         ],
     extras_require={
         'dev': [
