@@ -104,7 +104,6 @@ unit_exclusion_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 
 
 ecog_exclusion = [{"TEXT": {"FUZZY": {"IN": ["karnofsky", "nodal", "nutrition", "receptor"]}}}]
 
-
 ecog_preface = [{"LOWER": "ecog"}, 
                 {"LOWER": {"IN": ["performance", "status", "ps"]}, "OP": "?"}, 
                 {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 

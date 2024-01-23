@@ -4,8 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+twine = "*"
+setuptools = "*"
+wheel = "*"
+cava-lang = {editable = true, path = "."}
 
 [dev-packages]
 
 [requires]
-python_version = "3"
+python_version = "3.10"
+python_full_version = "3.10.5"

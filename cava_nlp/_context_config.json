@@ -50,7 +50,6 @@
     "literal": "nil",
     "pattern": null,
     "direction": "FORWARD"},
-
   {"category": "TERMINATE",
    "literal": "but",
    "pattern": [{"LOWER": "but"}],
@@ -65,15 +64,10 @@
       {
         "category": "NEGATED_EXISTENCE",
         "literal": "adequate to rule out",
-        "pattern": [
-          {
-            "LOWER": {
-              "IN": ["adequate", "sufficient"]
-            }
+        "pattern": [{
+            "LOWER": { "IN": ["adequate", "sufficient"]}
           },
-          {
-            "LOWER": "to"
-          },
+          { "LOWER": "to"},
           {
             "LOWER": "rule"
           },
@@ -224,8 +218,8 @@
       },
       {
         "category": "FAMILY",
-        "literal": ",;:",
-        "pattern": [{"LOWER":{"IN": [",", ":", ";"]}}],
+        "literal": ",;:()",
+        "pattern": [{"LOWER":{"IN": [",", ":", ";","(",")"]}}],
         "direction": "TERMINATE"
       },
       {
@@ -467,6 +461,26 @@
           {
             "LOWER": {
               "IN": ["decline", "declined", "declines", "declining"]
+            }
+          }
+        ],
+        "direction": "FORWARD"
+      },
+      {
+        "category": "NEGATED_EXISTENCE",
+        "literal": "not fit",
+        "pattern": [
+          {
+            "LOWER": {
+              "IN": ["not"]
+            }
+          },{
+            "LOWER": {
+              "IN": ["fit", "suitable"]
+            }
+          },{
+            "LOWER": {
+              "IN": ["fit", "suitable"]
             }
           }
         ],
@@ -1010,6 +1024,12 @@
       {
         "category": "NEGATED_EXISTENCE",
         "literal": "other possibilities of",
+        "pattern": null,
+        "direction": "TERMINATE"
+      },
+      {
+        "category": "NEGATED_EXISTENCE",
+        "literal": "with",
         "pattern": null,
         "direction": "TERMINATE"
       },

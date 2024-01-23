@@ -29,11 +29,13 @@ setup(
     author_email='georgina.kennedy@unsw.edu.au',
     description='CaVa-specific spacy language',
     name='cava_lang',
+    python_requires='>=3.10',
     version=version,
     packages=find_packages(exclude=['ez_setup', 'example', 'test']),
     include_package_data=True,
     install_requires=[
-        'spacy>=3.1', 
+        'spacy>=3.4', 
+        'medspacy>=1.1',
         'striprtf'
         ],
     extras_require={
@@ -43,7 +45,7 @@ setup(
             "check-manifest>=0.43"
         ],
         'gpu': [
-            'spacy[cuda114]>=3.3', 
+            'spacy[cuda114]>=3.4', 
             'spacy-transformers'
         ]
     }

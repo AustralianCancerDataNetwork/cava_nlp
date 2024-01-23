@@ -8,15 +8,15 @@ sections = {'plan':['action', 'actions', 'plan', 'plans',
                     'intervention/recommendations', 'plan / future goals', 
                     'action / intervention', 'plan and investigations', 
                     'allied health referrals'],
-            'exam': ['o\e', 'clinical examination', 'exam', 'today', 'current',
+            'exam': [ 'clinical examination', 'exam', 'today', 'current',
                      'on examination', 'examination', 'impression', 'consultation summary',
                      'physical assessment', 'nursing', 'physical exam', 
                      'oe', 'imp','skin assessment', 'abdo', 'cvs', 'pe',
                      'assessment', 'assess', 'investigations', 'on review', 
                      'i', 'investigation', 'ix', 'staging investigation', 
-                     'current function', 'findings', 'ex', 'exn', 'o.e', 
+                     'current function', 'findings', 'ex', 'exn',  
                      'skin', 'currently', 'ecog', 'physical ax', 'a', 
-                     'ecog score', 'o', 'now', 'pr', 'o/e', 'ax unit', 'pet scan', 'progress ct'],
+                     'ecog score', 'o', 'now', 'pr', 'ax unit', 'pet scan', 'progress ct'],
             'results': ['outcome measures', 'results', 'pathology', 't', 'histology',
                         'histopath', 'vitals', 'result status', 'fbc', 'wt', 'bp',
                         'histopathology', 'path', 'bloods', 'temp', 'rr', 'bx','cxr',
@@ -95,6 +95,8 @@ sections = {'plan':['action', 'actions', 'plan', 'plans',
             'trial': ['trial', 'protocol number', 'visit', 'protocol title', 
                       'subject id', 'protocol', 'study']
             }
+
+no_punct_requ = {'exam': ['o/e', 'o\e', 'o.e']}
 
 line_break = [{"LOWER": {"IN":["\n", "\n\n", "\n \n", "-"]}}]
 
