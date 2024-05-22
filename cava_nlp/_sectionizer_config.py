@@ -96,10 +96,17 @@ sections = {'plan':['action', 'actions', 'plan', 'plans',
                       'subject id', 'protocol', 'study']
             }
 
+# these ones are so distinctive that we don't worry about whether or not they are followed by punctuation
 no_punct_requ = {'exam': ['o/e', 'o\e', 'o.e']}
 
-line_break = [{"LOWER": {"IN":["\n", "\n\n", "\n \n", "-"]}}]
-
+# a double dash as a start of a sentence counts as a potential section break also 
+# n.b. this is an optimisation for copy-pasted email text
+line_break = [{"LOWER": {"IN":["\n", "\n\n", "\n \n"]}}]
+             
+# a double dash as a start of a sentence counts as a potential section break also 
+# n.b. this is an optimisation for copy-pasted email text
+dated_line_break = [[{"LOWER": {"IN":["\n", "\n\n", "\n \n"]}}],
+                    [{"LOWER": "-", "OP": "{2,}"}]]
 
 sectionizer_attrs = {'exam': {'section_current': True},
                      'plan': {'section_hypothetical': True},

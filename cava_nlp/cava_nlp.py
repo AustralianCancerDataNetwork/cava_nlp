@@ -11,7 +11,7 @@ from spacy.lang.en import English, TOKENIZER_EXCEPTIONS
 from .tokenizer_exceptions import special_cases, units_regex, unit_suffix, months, ordinal, \
                                   times, abbv, no_whitespace, emails, day_regex, year_regex, \
                                   numeric_month_regex, scientific_notation, weight_units
-from .sectionizer_config import get_sectionizer_attrs, get_sectionizer_patterns
+from .sectionizer_config import get_sectionizer_attrs, get_sectionizer_patterns, get_dated_sectionizer_patterns
 from .context_config import get_context_attrs, get_context_patterns
 
 # retokeniser that allows us to tokenise brutally in the first step (e.g. all slashes, all periods, all commas)
@@ -262,17 +262,24 @@ class CaVaLang(English):
     lang = 'cava_lang'
     Defaults = CaVaLangDefaults
 
-    def __init__(self, with_section_context=False, *args, **kwargs):
+    def __init__(self, with_section_context=False, with_dated_section_context=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # we default to medspacy sentencizer as it's much better than the spacy one for clinical text - pysbd handles
         # new lines more intelligently than pyrush
         self.add_pipe('medspacy_pysbd')
-        if with_section_context:
-            #medspacy.load(self, medspacy_disable=['medspacy_tokenizer', 'medspacy_context', 'medspacy_target_matcher'])
-            sectionizer = self.add_pipe('medspacy_sectionizer', config={'rules': None, 'span_attrs': get_sectionizer_attrs()})
-            sectionizer.add(get_sectionizer_patterns())
+        if with_section_context or with_dated_section_context:
+            # note that with_dated_section_context=True overrides with_section_context when both are provided
+            sectionizer_config = {'rules': None, 'span_attrs': get_sectionizer_attrs()}
+            sectionizer_type = 'dated_sectionizer' if with_dated_section_context else 'medspacy_sectionizer'
+            sectionizer_patterns = get_dated_sectionizer_patterns if with_dated_section_context else get_sectionizer_patterns
+            sectionizer = self.add_pipe(sectionizer_type, config=sectionizer_config)
+            sectionizer.add(sectionizer_patterns())
+            # #medspacy.load(self, medspacy_disable=['medspacy_tokenizer', 'medspacy_context', 'medspacy_target_matcher'])
+            # sectionizer = self.add_pipe('medspacy_sectionizer', config={'rules': None, 'span_attrs': get_sectionizer_attrs()})
+            # sectionizer.add(get_sectionizer_patterns())
             context = self.add_pipe('medspacy_context', config={'span_attrs': get_context_attrs(), 
                                                                 'rules': str(get_context_patterns())})#, 'terminating_types': {'CURRENT': ['NEW_SECTION'], 'HISTORICAL': ['NEW_SECTION']}})
+        
 
     def __call__(self, text, whitespace_strip=[' '],  *args, **kwargs):
         # we don't want to preserve repeated whitespace if using matcher, 

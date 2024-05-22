@@ -47,20 +47,18 @@ class DatedSectionizer(Sectionizer):
 
     def add(self, rules):
 
-        if isinstance(rules, DatedRule):
+        if isinstance(rules, SectionRule):
             rules = [rules]
-        for rule in rules:
-            if not isinstance(rule, DatedRule):
-                raise TypeError("For dated sectionizer, rules must be type DatedRule, not", type(rule))
-
+            
         super(DatedSectionizer, self).add(rules)
 
         for rule in rules:
-            name = rule.category
-            top_level = rule.top_level
-            if top_level and name not in self._top_level:
-                self._top_level.append(name)
-                self._parent_sections[name] = []
+            if isinstance(rules, DatedRule):
+                name = rule.category
+                top_level = rule.top_level
+                if top_level and name not in self._top_level:
+                    self._top_level.append(name)
+                    self._parent_sections[name] = []
 
 
     def set_parent_sections(
