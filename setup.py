@@ -18,36 +18,30 @@ except NameError:
 
 version_ns = {}
 try:
-    execfile(path.join(here, '_version.py'), version_ns)
+    execfile(path.join(here, "_version.py"), version_ns)
 except EnvironmentError:
-    version = 'dev'
+    version = "dev"
 else:
-    version = version_ns.get('__version__', 'dev')
+    version = version_ns.get("__version__", "dev")
 
 setup(
-    author='Georgina Kennedy',
-    author_email='georgina.kennedy@unsw.edu.au',
-    description='CaVa-specific spacy language',
-    name='cava_lang',
-    python_requires='>=3.10',
+    author="Georgina Kennedy",
+    author_email="georgina.kennedy@unsw.edu.au",
+    description="CaVa-specific spacy language",
+    name="cava_lang",
+    python_requires=">=3.10",
     version=version,
-    packages=find_packages(exclude=['ez_setup', 'example', 'test']),
+    packages=find_packages(exclude=["ez_setup", "example", "test"]),
     include_package_data=True,
     install_requires=[
-        'spacy>=3.4', 
-        'medspacy>=1.1',
-        'striprtf',
-        'python-dateutil'
-        ],
+        "spacy>=3.4",
+        "medspacy>=1.1",
+        "striprtf",
+        "python-dateutil",
+        "numpy==1.26.4",
+    ],
     extras_require={
-        'dev': [
-            "pytest>=3.7",
-            "pytest-timeout>=1.4.2",
-            "check-manifest>=0.43"
-        ],
-        'gpu': [
-            'spacy[cuda114]>=3.4', 
-            'spacy-transformers'
-        ]
-    }
+        "dev": ["pytest>=3.7", "pytest-timeout>=1.4.2", "check-manifest>=0.43"],
+        "gpu": ["spacy[cuda114]>=3.4", "spacy-transformers"],
+    },
 )
