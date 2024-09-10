@@ -37,7 +37,7 @@ setup(
         'spacy>=3.4', 
         'medspacy>=1.1',
         'striprtf',
-        'dateutil'
+        'python-dateutil'
         ],
     extras_require={
         'dev': [
