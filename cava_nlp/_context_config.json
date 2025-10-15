@@ -10,6 +10,7 @@
               "baseline",
               "was",
               "originally",
+              "prev",
               "previous",
               "previously",
               "premorbid",
@@ -34,7 +35,7 @@
         { "IS_PUNCT": true, "OP": "?" },
         {
           "LOWER": {
-            "in": ["morbid", "morbidly", "admission", "op", "operative"]
+            "in": ["morbid", "morbidly", "admission", "op", "operative", "biopsy"]
           }
         }
       ],
@@ -80,11 +81,12 @@
             "in": [
               "current",
               "is",
-              "now",
               "continue",
               "remains",
               "still",
-              "ongoing"
+              "ongoing",
+              "oe",
+              "examination"
             ]
           }
         }
@@ -103,7 +105,7 @@
       "category": "CURRENT",
       "literal": "currently",
       "pattern": [
-        { "LOWER": { "in": ["currently", "presently", "chronically"] } }
+        { "LOWER": { "in": ["currently", "presently", "now", "chronically"] } }
       ],
       "direction": "BIDIRECTIONAL",
       "max_targets": 1
