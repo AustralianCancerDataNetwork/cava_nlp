@@ -13,7 +13,8 @@ pgsga_preface = [{"LOWER": {"IN": ['pg', 'pgsga', 'psgsga', 'sga', 'psga', 'psga
                  {"LOWER": {"IN": ["-", '_', ":", "=", "of"]}, "OP": "?"},
                  ]
 
-pgsga_val_patterns = [[{"TEXT": {"IN": ["("]}, "OP": "?"}, 
+pgsga_val_patterns = [[{"TEXT": {"REGEX": "^\d[abc]"}}],
+                      [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
                        {"IS_DIGIT": True},
                        {"TEXT": {"IN": ["/", ","]},  "OP": "?"},
                        {"LOWER": "rating", "OP": "?"},

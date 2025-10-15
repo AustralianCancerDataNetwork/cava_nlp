@@ -46,6 +46,7 @@ class PGSGAValue(ValueExtractor):
         super(PGSGAValue, self).__init__(vocab=vocab, 
                                           token_label='pgsga', 
                                           value_label='pgsga_value', 
+                                          entity_label='PGSGA_VALUE',
                                           token_patterns=pgsga_patterns, 
                                           value_patterns=pgsga_val_patterns)
 
