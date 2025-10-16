@@ -2,16 +2,17 @@ from .tokenizer_exceptions import weight_units, units_regex
 
 weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
 
-pgsga_preface = [{"LOWER": {"IN": ['pg', 'pgsga', 'psgsga', 'sga', 'psga', 'psgag']}},
-                 {"TEXT": {"IN": ["-", '_', ":"]}, "OP": "?"},
-                 {"LOWER": "sga", "OP": "?"},
-                 {"LOWER": {"IN": ["short", "sf"]}, "OP": "?"},
-                 {"LOWER": {"IN": ["score", "rating", "form", "shortform", "from"]}, "OP": "?"},
-                 {"LOWER": "and", "OP": "?"},
-                 {"TEXT": {"IN": ["(", "/"]}, "OP": "?"},
-                 {"LOWER": {"IN": ["score", "rating"]}, "OP": "?"},
-                 {"LOWER": {"IN": ["-", '_', ":", "=", "of"]}, "OP": "?"},
-                 ]
+# pgsga_preface = [{"LOWER": {"IN": ['pg', 'pgsga', 'psgsga', 'sga', 'psga', 'psgag']}},
+#                  {"TEXT": {"IN": ["-", '_', ":"]}, "OP": "?"},
+#                  {"LOWER": "sga", "OP": "?"},
+#                  {"LOWER": {"IN": ["short", "sf"]}, "OP": "?"},
+#                  {"LOWER": {"IN": ["score", "rating", "form", "shortform", "from"]}, "OP": "?"},
+#                  {"LOWER": "and", "OP": "?"},
+#                  {"TEXT": {"IN": ["(", "/"]}, "OP": "?"},
+#                  {"LOWER": {"IN": ["score", "rating"]}, "OP": "?"},
+#                  {"LOWER": {"IN": ["-", '_', ":", "=", "of"]}, "OP": "?"},
+#                  ]
+
 
 pgsga_val_patterns = [[{"TEXT": {"REGEX": "^\d[abc]"}}],
                       [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
@@ -34,8 +35,20 @@ pgsga_val_patterns = [[{"TEXT": {"REGEX": "^\d[abc]"}}],
                        {"IS_DIGIT": True},
                        {"TEXT": {"IN": [")"]}, "OP": "?"}]]
         
+pgsga_preface = [
+ [{"LOWER": 'pg'},{"TEXT": {"IN": ["-", '_', ":"]}, "OP": "?"},{"LOWER": "sga"}],
+ [{"LOWER": {"IN": [ 'pgsga', 'psgsga', 'psga', 'psgag']}},{"TEXT": {"IN": ["-", '_', ":"]}, "OP": "?"}]
+]
 
-pgsga_patterns = [pgsga_preface + val for val in pgsga_val_patterns]
+score_preface = [{"LOWER": {"IN": ["short", "sf"]}, "OP": "?"},
+                 {"LOWER": {"IN": ["score", "rating", "form", "shortform", "from"]}, "OP": "?"},
+                 {"LOWER": "and", "OP": "?"},
+                 {"TEXT": {"IN": ["(", "/"]}, "OP": "?"},
+                 {"LOWER": {"IN": ["score", "rating"]}, "OP": "?"},
+                 {"LOWER": {"IN": ["-", '_', ":", "=", "of"]}, "OP": "?"}]
+
+pgsga_patterns = [x for y in [[pref + pp for pref in [p + score_preface for p in pgsga_preface]] for pp in pgsga_val_patterns] for x in y]
+#pgsga_patterns = [pgsga_preface + val for val in pgsga_val_patterns]
 
 # to avoid clashes with the surname 'ng'
 feeding_tube_exclusion = [[{"LOWER": {"IN": ["dr", "mr", "mrs"]}}, {"IS_PUNCT": True, "OP": "?"}]]
