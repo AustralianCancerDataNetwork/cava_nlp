@@ -1,9 +1,7 @@
-import re
-from spacy.tokens import Doc, Span
 from spacy.matcher import Matcher
 from spacy.util import filter_spans
 from spacy.tokens import Token
-from ._normalisation_config import (
+from cava_nlp.regex import (
     date_patterns,
     times,
     units_regex

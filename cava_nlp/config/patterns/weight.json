@@ -1,0 +1,24 @@
+{
+  "token": [
+    [
+      {"LIKE_NUM": true},
+      {"LOWER": {"IN": ${regex.weight_units}}}
+    ]
+  ],
+
+  "value": [
+    [
+      {"LIKE_NUM": true}
+    ]
+  ],
+
+  "norm": [
+    [
+      {"LOWER": {"IN": ["kg", "kgs", "kilo", "kilos"]}}
+    ]
+  ],
+
+  "exclusions": [
+
+  ]
+}

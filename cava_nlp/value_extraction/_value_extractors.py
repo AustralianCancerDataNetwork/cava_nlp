@@ -1,4 +1,4 @@
-from ..normalisation._normalisation_config import weight_units, units_regex
+from cava_nlp.regex import weight_units, units_regex
 
 weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
 

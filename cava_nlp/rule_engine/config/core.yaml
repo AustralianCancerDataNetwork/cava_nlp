@@ -1,0 +1,13 @@
+lang: cava_nlp
+components:
+  ecog_status:
+    factory: rule_engine
+    config:
+      token_label: ecog
+      value_label: ecog_value
+      entity_label: ECOG
+      token_patterns: ${patterns.ecog.token}
+      value_patterns: ${patterns.ecog.value}
+      exclusions: ${patterns.ecog.exclusions}
+      merge_ents: true
+      debug: true
