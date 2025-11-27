@@ -14,7 +14,7 @@ weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
 #                  ]
 
 
-pgsga_val_patterns = [[{"TEXT": {"REGEX": "\d[abc]"}}],
+pgsga_val_patterns = [[{"TEXT": {"REGEX": r"\d[abc]"}}],
                       [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
                        {"IS_DIGIT": True},
                        {"TEXT": {"IN": ["/", ","]},  "OP": "?"},
@@ -78,10 +78,10 @@ unit_patterns = [[{"IS_DIGIT": True, "OP": "?"},
                     [{"IS_DIGIT": True, "OP": "?"}, 
                     {"_":{"sci_not": True}, "OP": "?"},
                     {"TEXT": {"REGEX": units_regex}}], # 20L, 50 mg
-                    [{"_": {"decimal": True}}, 
+                    [{"_": {"kind": "decimal"}}, 
                     {"_":{"sci_not": True}, "OP": "?"}, 
                     {"TEXT": {"REGEX": units_regex}}],
-                    [{"_": {"decimal": True}}, 
+                    [{"_": {"kind": "decimal"}}, 
                     {"_":{"sci_not": True}, "OP": "?"}, 
                     {"TEXT": {"REGEX": units_regex}, "OP": "?"}, 
                     {"LOWER": {"IN": ["/", "per"]}}, # 100mg/mL, 10mg/100mL, 10 mg per L...
@@ -92,7 +92,7 @@ unit_patterns = [[{"IS_DIGIT": True, "OP": "?"},
                     {"NORM": "unit_num"}, 
                     {"LOWER": {"IN": ["/", "per"]}}, 
                     {"NORM": "unit_denom"}],
-                    [{"_": {"decimal": True}}, 
+                    [{"_": {"kind": "decimal"}}, 
                     {"_":{"sci_not": True}, "OP": "?"},
                     {"NORM": "unit_num"}, 
                     {"LOWER": {"IN": ["/", "per"]}}, 
@@ -102,15 +102,15 @@ unit_patterns = [[{"IS_DIGIT": True, "OP": "?"},
                     {"IS_DIGIT": True}],
                     [{"LOWER": "bmi"},
                     {"TEXT": {"IN": ['-', '=', '~', ':', '>', '<']}, "OP": "?"},
-                    {"_": {"decimal": True}}]] 
+                    {"_": {"kind": "decimal"}}]] 
                 
-unit_val_patterns = [[{"IS_DIGIT": True}, {"_":{"sci_not": True}, "OP": "?"}],
-                     [{"_": {'decimal': True}}, {"_":{"sci_not": True}, "OP": "?"}], 
+unit_val_patterns = [[{"IS_DIGIT": True}, {"_":{"kind": "scientific"}, "OP": "?"}],
+                     [{"_": {'kind': "decimal"}}, {"_":{"kind": "scientific"}, "OP": "?"}], 
                      [{"LOWER": {"IN": ["zero", "o"]}}],
-                     [{"_": {'date': True}, 'LENGTH': 3}]]
+                     [{"_": {'kind': "date"}, 'LENGTH': 3}]]
 
 unit_norm_patterns = [[{"IS_DIGIT": False,
-                        "_": {"decimal": False, "date": False, "sci_not": False},
+                        "_": {"kind": {"NOT_IN": ["date", "scientific", "decimal"]}},
                         "LOWER": {"NOT_IN": ["zero", "o", '-', '=', '~', ':', '>', '<']}}]]
 
 unit_exclusion_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 'tube'}]]        
@@ -118,50 +118,71 @@ unit_exclusion_patterns = [[{'LOWER': 'g'}, {'TEXT': '-', 'OP': '?'}, {'LOWER': 
 
 ecog_exclusion = [{"TEXT": {"FUZZY": {"IN": ["karnofsky", "nodal", "nutrition", "receptor"]}}}]
 
-ecog_preface = [{"LOWER": "ecog"}, 
-                {"LOWER": {"IN": ["performance", "status", "ps"]}, "OP": "?"}, 
-                {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 
-                {"LOWER": {"IN": ["is", "now", "=", "still", "of", "~", "currently", "has", "remains", "between", "around", "normally", "was", "improved"]}, "OP": "?"}, \
-                {"LOWER": {"IN": ["been", "at","to", "was"]}, "OP": "?"}, 
-                {"LOWER": {"IN": ["least"]}, "OP": "?"}, 
-                {"IS_PUNCT": True, "OP": "?"}]
+ecog_preface = [
+    {"LOWER": "ecog"}, 
+    {"LOWER": {"IN": ["performance", "status", "ps"]}, "OP": "?"}, 
+    {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 
+    {"LOWER": {"IN": ["is", "now", "=", "still", "of", "~", "currently", "has", "remains", "between", "around", "normally", "was", "improved"]}, "OP": "?"}, \
+    {"LOWER": {"IN": ["been", "at","to", "was"]}, "OP": "?"}, 
+    {"LOWER": {"IN": ["least"]}, "OP": "?"}, 
+    {"IS_PUNCT": True, "OP": "?"}
+]
 
-ps_preface = [{"LOWER": {"IN": ["performance", "status", "ps"]}}, 
-                {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 
-                {"LOWER": {"IN": ["is", "now", "=", "still", "of", "~", "currently", "has", "remains", "normally", "was", "improved"]}, "OP": "?"}, \
-                {"LOWER": {"IN": ["been", "at","to", "was"]}, "OP": "?"}, 
-                {"LOWER": {"IN": ["least"]}, "OP": "?"}, 
-                {"IS_PUNCT": True, "OP": "?"}]
+ps_preface = [
+    {"LOWER": {"IN": ["performance", "status", "ps"]}}, 
+    {"LOWER": {"IN": ["score", "status", "borderline"]}, "OP": "?"}, 
+    {"LOWER": {"IN": ["is", "now", "=", "still", "of", "~", "currently", "has", "remains", "normally", "was", "improved"]}, "OP": "?"}, \
+    {"LOWER": {"IN": ["been", "at","to", "was"]}, "OP": "?"}, 
+    {"LOWER": {"IN": ["least"]}, "OP": "?"}, 
+    {"IS_PUNCT": True, "OP": "?"}
+]
 
-ecog_patterns = [# rare but occasional ecog 2.5
-                    ecog_preface + [{"_": {'decimal': True}}], 
-                    # special case for when ECOG of 0 is entered as ECOG of O (letter o instead of zero) or written in full
-                    ecog_preface + [{"LOWER": {"IN": ["o", "zero", "0", "1", "2", "3", "4"]}}], 
-                    # matches additional forms with range e.g. between 1 and 2, 1 to 2
-                    ecog_preface + [{"IS_DIGIT": True}, 
-                                    {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
-                                    {"IS_DIGIT": True}], 
-                    # special case to handle the fact that retokenisation may merge ranges if of the form 1-2 if they meet criteria for date entity
-                    ecog_preface + [{"_": {'date': True}, 'LENGTH': 3}],
-                    # repeat the above except performance status 2, ps=2 without leading 'ecog'
-                    # ps_preface + [{"IS_DIGIT": True}],
-                    ps_preface + [{"_": {'decimal': True}}], 
-                    ps_preface + [{"LOWER": {"IN": ["o", "zero",  "0", "1", "2", "3", "4"]}}], 
-                    ps_preface + [{"IS_DIGIT": True}, \
-                                    {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
-                                    {"IS_DIGIT": True}], 
-                    ps_preface + [{"_": {'date': True}, 'LENGTH': 3}],
-                    # repeat the above except with the exclusion token target
-                    ecog_exclusion + ps_preface + [{"IS_DIGIT": True}],
-                    ecog_exclusion + ps_preface + [{"_": {'decimal': True}}], 
-                    ecog_exclusion + ps_preface + [{"LOWER": {"IN": ["o", "zero"]}}], 
-                    ecog_exclusion + ps_preface + [{"IS_DIGIT": True}, \
-                                                {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
-                                                {"IS_DIGIT": True}], 
-                    ecog_exclusion + ps_preface + [{"_": {'date': True}, 'LENGTH': 3}]]
+ecog_backhalf = [
+    [
+      {"LOWER": {"IN": ["o", "zero", "0", "1", "2", "3", "4"]}}
+    ],
+    [
+      {"IS_DIGIT": True}, 
+      {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
+      {"IS_DIGIT": True}
+    ], 
+    [{"_": {'decimal': True}}]
+]
+
+ecog_patterns = [ecog_preface + pattern for pattern in ecog_backhalf] + \
+                [ps_preface + pattern for pattern in ecog_backhalf] + \
+                [ecog_exclusion + ps_preface + pattern for pattern in ecog_backhalf]
+
+
+  # ecog_patterns = [# rare but occasional ecog 2.5
+  #                    # ecog_preface + [{"_": {'kind': "decimal"}}], 
+  #                     # special case for when ECOG of 0 is entered as ECOG of O (letter o instead of zero) or written in full
+  #                     ecog_preface + [{"LOWER": {"IN": ["o", "zero", "0", "1", "2", "3", "4"]}}], 
+  #                     # matches additional forms with range e.g. between 1 and 2, 1 to 2
+  #                     ecog_preface + [{"IS_DIGIT": True}, 
+  #                                     {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
+  #                                     {"IS_DIGIT": True}], 
+  #                     # special case to handle the fact that retokenisation may merge ranges if of the form 1-2 if they meet criteria for date entity
+  #                 #    ecog_preface + [{"_": {'kind': "date"}, 'LENGTH': 3}],
+  #                     # repeat the above except performance status 2, ps=2 without leading 'ecog'
+  #                     # ps_preface + [{"IS_DIGIT": True}],
+  #                 #    ps_preface + [{"_": {'kind': "decimal"}}], 
+  #                     ps_preface + [{"LOWER": {"IN": ["o", "zero",  "0", "1", "2", "3", "4"]}}], 
+  #                     ps_preface + [{"IS_DIGIT": True}, \
+  #                                     {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
+  #                                     {"IS_DIGIT": True}], 
+  #                #     ps_preface + [{"_": {'kind': "date"}, 'LENGTH': 3}],
+  #                     # repeat the above except with the exclusion token target
+  #                     ecog_exclusion + ps_preface + [{"IS_DIGIT": True}],
+  #                 #    ecog_exclusion + ps_preface + [{"_": {'kind': "decimal"}}], 
+  #                     ecog_exclusion + ps_preface + [{"LOWER": {"IN": ["o", "zero"]}}], 
+  #                     ecog_exclusion + ps_preface + [{"IS_DIGIT": True}, \
+  #                                                 {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
+  #                                                 {"IS_DIGIT": True}]]#, 
+  #                #     ecog_exclusion + ps_preface + [{"_": {'kind': "date"}, 'LENGTH': 3}]]
 
 # to match just the numeric portion within an ECOG status entity
 ecog_val_patterns = [[{"TEXT": {"IN": ['0','1','2','3','4']}}], 
-                        [{"LOWER": {"IN": ["zero", "o"]}}]]#,
+                     [{"LOWER": {"IN": ["zero", "o"]}}]]#,
                     # [{"_": {"decimal": True}}]]
                         #[{"_": {'date': True}, 'LENGTH': 3}]]

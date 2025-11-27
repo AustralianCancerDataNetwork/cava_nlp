@@ -1,4 +1,3 @@
-
 from typing import Any, Dict, List
 
 def _validate_pattern_list(name: str, patterns: Any, filename: str):
@@ -22,7 +21,6 @@ def _validate_pattern_list(name: str, patterns: Any, filename: str):
                     f"In {filename}, pattern under '{name}' has non-dict token spec: "
                     f"{token_spec!r}"
                 )
-
 
 def validate_pattern_schema(patterns: Dict[str, Any], filename: str):
     """

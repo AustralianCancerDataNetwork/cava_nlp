@@ -1,38 +1,12 @@
 import json, re, yaml
 from functools import lru_cache
 from pathlib import Path
-from cava_nlp import regex as rx
-from cava_nlp.rule_engine.validator import validate_pattern_schema
-from cava_nlp.config.namespace import resolver
+from cava_nlp.namespaces import regex as rx
+from cava_nlp.namespaces.core.validator import validate_pattern_schema
+from cava_nlp.namespaces.core.namespace import resolver
 
 VAR_RE = re.compile(r"\$\{([^}]+)\}")
-PATTERN_ROOT = Path(__file__).parent / "patterns"
-
-
-def _resolve_variable(name: str):
-    """
-    Resolve names like:
-        - weight_units                 (regex module)
-        - patterns.weight.token        (pattern file)
-    """
-    if hasattr(rx, name):
-        return getattr(rx, name)
-
-    if name.startswith("patterns."):
-        parts = name.split(".")
-        if len(parts) != 3:
-            raise ValueError(f"Invalid patterns reference: {name}")
-
-        _, file, key = parts
-        pattern_dict = load_pattern_file(f"{file}.json")
-
-        if key not in pattern_dict:
-            raise KeyError(f"{key!r} not found in pattern file {file}.json")
-
-        return pattern_dict[key]
-
-    raise KeyError(f"Unknown placeholder: {name}")
-
+PATTERN_ROOT = Path(__file__).parent.parent / "rulesets"
 
 def _interpolate_json(text: str):
     """
@@ -46,16 +20,40 @@ def _interpolate_json(text: str):
 
     return VAR_RE.sub(repl, text)
 
-
 @lru_cache(maxsize=None)
 def load_pattern_file(filename: str):
+    """
+    Load a ruleset JSON file with variable interpolation.
+
+    Supports JSON references such as:
+        ${regex.year_regex}
+        ${constructs.ecog.preface_patterns}
+        ${rulesets.weight.token}
+    """
     path = PATTERN_ROOT / filename
-    with open(path, "r") as f:
-        raw = f.read()
+
+    if not path.exists():
+        raise FileNotFoundError(f"Pattern file not found: {path}")
+
+    raw = path.read_text()
     expanded = _interpolate_json(raw)
-    data = json.loads(expanded)
+
+    try:
+        data = json.loads(expanded)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"Invalid JSON after interpolation in {filename}: {e}"
+        ) from e
+
     validate_pattern_schema(data, filename)
     return data
+    # path = PATTERN_ROOT / filename
+    # with open(path, "r") as f:
+    #     raw = f.read()
+    # expanded = _interpolate_json(raw)
+    # data = json.loads(expanded)
+    # validate_pattern_schema(data, filename)
+    # return data
 
 def _merge_components(base: dict, other: dict) -> dict:
     """Merge 'components' maps; later files override earlier ones with same names."""
@@ -103,15 +101,3 @@ def load_engine_config(path: str | Path):
         config = _merge_components(config, inc_cfg)
 
     return config
-
-def patterns_namespace(name):
-    file, key = name.split(".", 1)
-    data = load_pattern_file(f"{file}.json")
-    if key not in data:
-        raise KeyError(f"{key} not found in {file}.json")
-    return data[key]
-
-
-resolver.register("regex", lambda name: getattr(rx, name))
-resolver.register("patterns", patterns_namespace)
-resolver.register("default", lambda name: getattr(rx, name))

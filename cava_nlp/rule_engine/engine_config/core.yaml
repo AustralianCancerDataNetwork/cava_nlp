@@ -6,8 +6,8 @@ components:
       token_label: ecog
       value_label: ecog_value
       entity_label: ECOG
-      token_patterns: ${patterns.ecog.token}
-      value_patterns: ${patterns.ecog.value}
-      exclusions: ${patterns.ecog.exclusions}
+      token_patterns: ${rulesets.ecog.token}
+      value_patterns: ${rulesets.ecog.value}
+      exclusions: ${rulesets.ecog.exclusions}
       merge_ents: true
       debug: true

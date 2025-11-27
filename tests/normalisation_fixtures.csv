@@ -7,17 +7,17 @@ test_decimal_multiple,Range 5.0-7.2,"[Range, 5.0, -, 7.2]",{},"{'5.0': {'kind': 
 test_date_lower,follow up on 12 jan 2024,"[follow, up, on, 12 jan 2024]",{'12 jan 2024': '2024-01-12'},{'12 jan 2024': {'kind': 'date'}}
 test_date_mixed,appt booked 3 March 2025,"[appt, booked, 3 March 2025]",{'3 March 2025': '2025-03-03'},{'3 March 2025': {'kind': 'date'}}
 test_date_short_month,scan done 7 sep 2022,"[scan, done, 7 sep 2022]",{'7 sep 2022': '2022-09-07'},{'7 sep 2022': {'kind': 'date'}}
-test_units_simple,weight 5 kg recorded,"[weight, 5 kg, recorded]",{'5 kg': '5kg'},{'5 kg': {'kind': 'unit'}}
-test_units_caps,dose 250 MG given,"[dose, 250 MG, given]",{'250 MG': '250mg'},{'250 MG': {'kind': 'unit'}}
-test_units_plural,lost 2 kilos today,"[lost, 2 kilos, today]",{'2 kilos': '2kilos'},{'2 kilos': {'kind': 'unit'}}
-test_slash_unit_basic,dose 5 mg/kg today,"[dose, 5, mg/kg, today]",{},{'mg/kg': {'kind': 'unit'}}
-test_slash_unit_caps,given 2 mL/hr now,"[given, 2, mL/hr, now]",{},{'mL/hr': {'kind': 'unit'}}
-test_slash_unit_complex,dose 1 mcg/kg,"[dose, 1, mcg/kg]",{},{'mcg/kg': {'kind': 'unit'}}
+test_units_simple,weight 5 kg recorded,"[weight, 5 kg, recorded]",{},{'5 kg': {'kind': 'unit_norm'}}
+test_units_caps,dose 250 MG given,"[dose, 250 MG, given]",{},{'250 MG': {'kind': 'unit_norm'}}
+test_units_plural,lost 2 kilos today,"[lost, 2 kilos, today]",{},{'2 kilos': {'kind': 'unit_norm'}}
+test_slash_unit_basic,dose 5 mg/kg today,"[dose, 5 mg/kg, today]",{},"{'5 mg/kg': {'kind': 'unit_norm', 'value': 5, 'unit': 'mg/kg'}}"
+test_slash_unit_caps,given 2 mL/hr now,"[given, 2 mL/hr, now]",{},"{'2 mL/hr': {'kind': 'unit_norm', 'value': 2, 'unit': 'ml/hr'}}"
+test_slash_unit_complex,dose 1 mcg/kg today,"[dose, 1 mcg/kg, today]",{},"{'1 mcg/kg': {'kind': 'unit_norm', 'value': 1, 'unit': 'mcg/kg'}}"
 test_scientific_plain,WCC was 10^9 today,"[WCC, was, 10^9, today]",{'10^9': '10.0^9'},"{'10^9': {'kind': 'scientific', 'value': 1_000_000_000}}"
 test_scientific_prefixed,titre x10^3 baseline,"[titre, x10^3, baseline]",{'x10^3': '10.0^3'},"{'x10^3': {'kind': 'scientific', 'value': 1_000}}"
 test_scientific_multiple,counts 5 and x10^6 now,"[counts, 5, and, x10^6, now]",{'x10^6': '10.0^6'},"{'x10^6': {'kind': 'scientific', 'value': 1_000_000}}"
-test_combined_decimal_units,glucose 5.8 mmol / L today,"[glucose, 5.8, mmol / L, today]",{'mmol / L': 'mmol/l'},"{'5.8': {'kind': 'decimal', 'value': 5.8}, 'mmol / L': {'kind': 'unit'}}"
-test_combined_date_units,on 3 Jan 2024 weight 80 kg,"[on, 3 Jan 2024, weight, 80 kg]","{'3 Jan 2024': '2024-01-03', '80 kg': '80kg'}","{'3 Jan 2024': {'kind': 'date'}, '80 kg': {'kind': 'unit'}}"
-test_combined_email_units,contact a@b.org then dose 5 mg / kg,"[contact, xxxxxxx, then, dose, 5, mg / kg]",{'mg / kg': 'mg/kg'},{'mg / kg': {'kind': 'unit'}}
+test_combined_decimal_units,glucose 5.8 mmol / L today,"[glucose, 5.8 mmol / L, today]",{},"{'5.8 mmol / L': {'kind': 'unit_norm', 'value': 5.8, 'unit': 'mmol / l'}}"
+test_combined_date_units,on 3 Jan 2024 weight 80 kg,"[on, 3 Jan 2024, weight, 80 kg]","{'3 Jan 2024': '2024-01-03'}","{'3 Jan 2024': {'kind': 'date'}, '80 kg': {'kind': 'unit_norm'}}"
+test_combined_email_units,contact a@b.org then dose 5 mg / kg,"[contact, xxxxxxx, then, dose, 5 mg / kg]",{},"{'5 mg / kg': {'kind': 'unit_norm', 'value': 5}}"
 test_combined_scientific_decimal,wcc x10^9 baseline 3.4,"[wcc, x10^9, baseline, 3.4]",{'x10^9': '10.0^9'},"{'x10^9': {'kind': 'scientific', 'value': 1_000_000_000}, '3.4': {'kind': 'decimal', 'value': 3.4}}"
 test_tokenizer_splits_medical,"WBC 5.4, Neut 3.5, Hb 95, PLT 211","[WBC, 5.4, COMM, Neut, 3.5, COMM, Hb, 95, COMM, PLT, 211]",{},"{'5.4': {'kind': 'decimal', 'value': 5.4}, '3.5': {'kind': 'decimal', 'value': 3.5}}"

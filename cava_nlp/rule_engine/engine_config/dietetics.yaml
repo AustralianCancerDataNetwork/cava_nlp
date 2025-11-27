@@ -6,8 +6,8 @@ components:
       token_label: weight
       value_label: weight_value
       entity_label: WEIGHT
-      token_patterns: ${patterns.weight.token}
-      value_patterns: ${patterns.weight.value}
-      norm_patterns: ${patterns.weight.norm}
-      exclusions: ${patterns.weight.exclusions}
+      token_patterns: ${rulesets.weight.token}
+      value_patterns: ${rulesets.weight.value}
+      norm_patterns: ${rulesets.weight.norm}
+      exclusions: ${rulesets.weight.exclusions}
       merge_ents: true

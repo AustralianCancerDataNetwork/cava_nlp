@@ -1,6 +1,3 @@
-
-import cava_nlp.regex as rx
-
 class VariableResolver:
     """Standalone resolver with pluggable namespaces."""
 
@@ -28,6 +25,5 @@ class VariableResolver:
             raise KeyError(f"Unknown namespace: {namespace}")
 
         return self.namespaces[namespace](rest)
-
 
 resolver = VariableResolver()
