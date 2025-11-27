@@ -1,4 +1,4 @@
-from .tokenizer_exceptions import weight_units, units_regex
+from ..normalisation._normalisation_config import weight_units, units_regex
 
 weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
 

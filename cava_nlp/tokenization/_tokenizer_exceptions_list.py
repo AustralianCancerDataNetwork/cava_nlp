@@ -13,14 +13,13 @@ stage_exceptions = ['ct1c', 'ct3', 'ctx', 'ct4', 'ct2', 'ct4b', 'ct4a', 'ct2a',
        't1c', 't3nos', 'tx', 't3', 't4', 't2', 't4b', 't4a',
        't2a', 't1b1', 't1b', 't3b', 't1', 't2b', 't1a', 't4nos',
        't0', 't3a', 't2c', 't3c', 't1nos', 't2nos', 't4d', 't1mi',
-       '4a', '2a', 't2a1', 't4c', 't1b2', 't2a2', '4b' '1c',
+       '4a', '2a', 't2a1', 't4c', 't1b2', 't2a2', '4b' '1c', 
        '3a', '3b', '2c', '2b', '1mi', '1b', '4c', '1a', 'tis',
-       'tis (dcis)', 'tis(dcis)', 'ta', 'is', 'tis (lcis)',
+       'tis (dcis)', 'tis(dcis)', 'ta', 'tis (lcis)',
        "tis (paget's)", 'n0', 'nx', 'n1', 'n1a', 'n2a', 'n2', 'n1b', 'n3',
        'n2b', 'n2nos', 'n1mi', 'n0(i+)', 'n3b', 'n2c', 'n3a', 'n1nos',
        'n3c', 'n0(i-)', 'n1c', 'n3nos', 'n0(mol-)', 'n0(mol+)', '0i',
        'm0', 'm1', 'm1b', 'm1a', 'm1c', 'm1nos', 'm1d', '1d', 'iii']
 
-genetic_exceptions = ['HER2']
+special_vocab = ['o\'clock']
 
-special_vocab = ['C1D1', 'o\'clock']

@@ -5,7 +5,7 @@
 /.cache
 /.coverage
 /.idea
-/.python*-*
+/.python
 /build
 /dist
 /htmlcov
@@ -25,3 +25,5 @@ pysqlite3*
 /__MAC*
 .vscode
 Pipfile.lock
+*.ipynb
+.DS_Store

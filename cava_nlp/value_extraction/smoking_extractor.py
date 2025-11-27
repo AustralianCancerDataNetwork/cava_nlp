@@ -8,8 +8,8 @@ Date: 2024-08-26
 """
 
 from spacy.language import Language
-from cava_nlp.value_extractor import ValueExtractor
-from cava_nlp.label_matcher import get_widest_match
+from cava_nlp.value_extraction.value_extractor import ValueExtractor
+from cava_nlp.value_extraction.label_matcher import get_widest_match
 
 
 @Language.factory("cava_smoking_extractor")

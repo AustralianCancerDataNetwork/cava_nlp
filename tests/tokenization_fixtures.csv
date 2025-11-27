@@ -1,0 +1,23 @@
+﻿Test Case,Input Data,Expected Result
+test_tokenizer_splits_basic,hello how are you,"[hello, how, are, you]"
+test_tokenizer_splits_basic,Plan: stop tmt 1mo prior to surgery/restart post-surgery - advised to see us before restarting.,"[Plan, :, stop, tmt, 1, mo, prior, to, surgery, /, restart, post, -, surgery, -, advised, to, see, us, before, restarting, .]"
+test_tokenizer_splits_basic,"Current sx: 
+- no wt loss
+- mild pain in T3/4","[Current, sx, :, LF, -, no, wt, loss, LF, -, mild, pain, in, T, 3, /, 4]"
+test_tokenizer_splits_basic,"Plan:
+1)discussed trial - answered pt questions
+2)consent to screening form complete","[Plan, :, LF, 1, ), discussed, trial, -, answered, pt, questions, LF, 2, ), consent, to, screening, form, complete]"
+test_tokenizer_splits_basic,Inserted 1st attempt,"[Inserted, 1, st, attempt]"
+test_tokenizer_splits_medical,VS @9:00am BP127/96 PR73 RR 18 Temp=36.9,"[VS, @, 9, :, 00, am, BP, 127, /, 96, PR, 73, RR, 18, Temp, =, 36.9]"
+test_tokenizer_splits_medical,??flare,"[??, flare]"
+test_tokenizer_splits_medical,reports acid +++,"[reports, acid, +++]"
+test_tokenizer_splits_medical,1600dose morphine (regular),"[1600, dose, morphine, (, regular, )]"
+test_tokenizer_splits_medical,relation <--> another,"[relation, <-->, another]"
+test_tokenizer_splits_medical,from --> to,"[from, -->, to]"
+test_tokenizer_splits_medical,5mg/kg/day,"[5, mg, /, kg, /, day]"
+test_tokenizer_splits_cancer,stage 1a,"[stage, 1a]"
+test_tokenizer_splits_cancer,Nursing: C1D1 weekly paclitaxel,"[Nursing, :, C1D1, weekly, paclitaxel]"
+test_tokenizer_splits_cancer,Proceed with C2,"[Proceed, with, C2]"
+test_tokenizer_splits_cancer,SGA-PGSGA,"[SGA, -, PGSGA]",
+test_tokenizer_splits_cancer,,
+test_tokenizer_splits_cancer,,

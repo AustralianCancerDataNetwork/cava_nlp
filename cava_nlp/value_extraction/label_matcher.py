@@ -74,26 +74,34 @@ class LabelMatcher:
                 except:
                     ...
 
-    
-    def __call__(self, doc):
-        
-        spans, matches = self.get_token_spans(doc)
-        self.set_entity(doc, matches)
+    def find_spans(self, doc):
+        matches = self.label_matcher(doc)
+        spans = [Span(doc, s, e, label=self.entity_label) for _, s, e in matches]
+        spans = spacy.util.filter_spans(spans)
+        if self.exclusion_matcher:
+            excl_matches = self.exclusion_matcher(doc)
+            excl_spans = [Span(doc, s, e) for _, s, e in excl_matches]
+            spans = [
+                sp for sp in spans
+                if not any(
+                    (sp.start_char >= ex.start_char and sp.end_char <= ex.end_char)
+                    for ex in excl_spans
+                )
+            ]
+        return spans
 
-        with doc.retokenize() as retokenizer:
-            for span in spacy.util.filter_spans(spans):
-                for tok in span:
-                    tok._.set(self.token_label, True) 
-                if self.merge_ents:
+
+    def __call__(self, doc):
+        spans = self.find_spans(doc)
+        doc.set_ents(list(doc.ents) + spans, default="unchecked")
+
+        for sp in spans:
+            for tok in sp:
+                tok._.set(self.token_label, True)
+
+        if self.merge_ents:
+            with doc.retokenize() as retokenizer:
+                for span in spans:
                     retokenizer.merge(span)
         return doc
-
-
-
-# def add_ecog_ent(matcher, doc, i, matches):
-#     # Get the current match and create tuple of entity label, start and end.
-#     # Append entity to the doc's entity. (Don't overwrite doc.ents!)
-#     match_id, start, end = matches[i]
-#     if get_widest_match(start, end, matches):
-#         entity = Span(doc, start, end, label="ECOG_STATUS")
-#         doc.ents += (entity,)
+    
