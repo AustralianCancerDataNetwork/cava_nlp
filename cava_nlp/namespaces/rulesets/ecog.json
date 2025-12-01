@@ -1,16 +1,10 @@
 {
   "token": ${constructs.value_extractor_constructs.ecog_patterns},
-  "value": [
-    [
-      {"LIKE_NUM": true}
-    ]
-  ],
+  "value": [[
+    {"TEXT": {"IN": ["0","1","2","3","4"]}}, 
+    {"LOWER": {"IN": ["zero", "o"]}}
+  ]],
   "norm": [
-    [
-      {"LOWER": {"IN": ["kg", "kgs", "kilo", "kilos"]}}
-    ]
   ],
-  "exclusions": [
-
-  ]
+  "exclusions": [[{"TEXT": {"FUZZY": {"IN": ["karnofsky", "nodal", "nutrition", "receptor"]}}}]]
 }

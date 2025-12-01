@@ -7,6 +7,7 @@ from cava_nlp.namespaces.regex import (
     units_regex
 )
 import dateparser
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, Any
 
@@ -202,8 +203,8 @@ class DateNormalizer(BaseNormalizer):
     def _register_patterns(self):
         patterns = self.patterns()
         assert len(patterns) == 2, "DateNormalizer patterns should return two lists."
-        self.skip_matcher.add(self.NAME, patterns[1])
-        self.PATTERNS = patterns[0]
+        self.skip_matcher.add(self.NAME, patterns[0])
+        self.PATTERNS = patterns[1]
 
     def get_spans(self, doc):
         matches = self.matcher(doc)
@@ -214,18 +215,15 @@ class DateNormalizer(BaseNormalizer):
     
     def compute(self, span):
         try:
-            dt = dateparser.parse(span.text, settings={'PREFER_DAY_OF_MONTH': 'first'})
-            if dt:
-                return NormalisationResult(
-                    norm=dt.strftime("%Y-%m-%d"),
-                    attrs={"value": dt}
-                )
-        except Exception:
-            return NormalisationResult(
-                        norm=span.text,
-                        attrs={}
-                    )
-
+            dt = datetime.strptime(span.text, "%Y-%m-%d")
+        except ValueError:
+            # todo: make this configurable for non-au users
+            dt = dateparser.parse(span.text, settings={'DATE_ORDER': 'DMY'})
+        return NormalisationResult(
+            norm=dt.strftime("%Y-%m-%d") if dt else span.text,
+            attrs={"value": dt}
+        )
+    
 class TimeNormalizer(BaseNormalizer):
     NAME = "time"
     EXTENSIONS = ["value"]   
@@ -293,9 +291,9 @@ class UnitNormalizer(BaseNormalizer):
 class ClinicalNormalizer:
     def __init__(self, nlp):
         self.normalizers = [
+            DateNormalizer(nlp),
             DecimalNormalizer(nlp),
             SciNotNormalizer(nlp),
-            DateNormalizer(nlp),
             TimeNormalizer(nlp),
             UnitNormalizer(nlp)
         ]

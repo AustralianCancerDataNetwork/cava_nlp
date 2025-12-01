@@ -47,13 +47,6 @@ def load_pattern_file(filename: str):
 
     validate_pattern_schema(data, filename)
     return data
-    # path = PATTERN_ROOT / filename
-    # with open(path, "r") as f:
-    #     raw = f.read()
-    # expanded = _interpolate_json(raw)
-    # data = json.loads(expanded)
-    # validate_pattern_schema(data, filename)
-    # return data
 
 def _merge_components(base: dict, other: dict) -> dict:
     """Merge 'components' maps; later files override earlier ones with same names."""

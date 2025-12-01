@@ -154,6 +154,99 @@ ecog_patterns = [ecog_preface + pattern for pattern in ecog_backhalf] + \
                 [ecog_exclusion + ps_preface + pattern for pattern in ecog_backhalf]
 
 
+genomic_variants = [
+    [
+        {"LOWER": "egfr"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": {"IN": ["g", "c","l","t"]}},
+        {"IS_DIGIT": True},
+        {"LOWER": {"IN": ["x", "s","r","m"]}},
+    ],
+    [
+        {"LOWER": "kras"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "g"},
+        {"IS_DIGIT": True},
+        {"LOWER": {"IN": ["c", "d", "v"]}},
+    ],
+    [
+        {"LOWER": "eml"},
+        {"IS_DIGIT": True},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "alk"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "fusion"},
+    ],
+    [
+        {"LOWER": "alk"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": {"IN": ["g", "l"]}},
+        {"IS_DIGIT": True},
+        {"LOWER": {"IN": ["a", "r", "m"]}},
+    ],
+    [
+        {"LOWER": "cd"},
+        {"IS_DIGIT": True},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "ros"},
+        {"IS_DIGIT": True},
+    ],
+    [
+        {"LOWER": "ezr"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "ros"},
+        {"IS_DIGIT": True},
+    ],
+    [
+        {"LOWER": "sdc"},
+        {"IS_DIGIT": True},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "ros"},
+        {"IS_DIGIT": True},
+    ],
+    [
+        {"LOWER": "slc"},
+        {"IS_DIGIT": True},
+        {"LOWER": "a"},
+        {"IS_DIGIT": True},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "ros"},
+        {"IS_DIGIT": True},
+    ],
+    [
+        {"LOWER": "braf"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "g"},
+        {"IS_DIGIT": True},
+        {"LOWER": "a"},
+    ],
+    [
+        {"LOWER": "braf"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "v"},
+        {"IS_DIGIT": True},
+        {"LOWER": "e"},
+    ],
+    [
+        {"LOWER": "met"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "exon"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"IS_DIGIT": True},
+    ],
+    [
+        {"LOWER": "egfr"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": {"IN": ["e"]}},
+        {"IS_DIGIT": True},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": {"IN": ["a"]}},
+        {"IS_DIGIT": True},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": {"IN": ["del"]}},
+    ],
+]
+
   # ecog_patterns = [# rare but occasional ecog 2.5
   #                    # ecog_preface + [{"_": {'kind': "decimal"}}], 
   #                     # special case for when ECOG of 0 is entered as ECOG of O (letter o instead of zero) or written in full

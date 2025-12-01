@@ -11,3 +11,14 @@ components:
       exclusions: ${rulesets.ecog.exclusions}
       merge_ents: true
       debug: true
+  variant_status:
+    factory: rule_engine
+    config:
+      token_label: variant
+      value_label: variant_value
+      entity_label: GENOMIC
+      token_patterns: ${rulesets.genomic.token}
+      value_patterns: ${rulesets.genomic.value}
+      exclusions: ${rulesets.genomic.exclusions}
+      merge_ents: true
+      debug: true
