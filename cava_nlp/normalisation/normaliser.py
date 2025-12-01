@@ -92,6 +92,7 @@ class BaseNormalizer:
         if not spans:
             return doc
 
+        rule_spans = []
         with doc.retokenize() as retok:
             for span in spans:
                 res = self.compute(span)
@@ -100,7 +101,14 @@ class BaseNormalizer:
                 token._.kind = self.NAME
                 for attr, val in res.attrs.items():
                     setattr(token._, attr, val)
-                setattr(token._, self.NAME, True)
+                setattr(token._, self.NAME, True) # type: ignore
+                new_ent = doc.char_span(token.idx, token.idx + len(token.text), label=self.NAME) 
+                if new_ent is not None: 
+                    rule_spans.append(new_ent)
+
+        if "rule_engine" not in doc.spans:
+            doc.spans["rule_engine"] = []
+        doc.spans["rule_engine"].extend(rule_spans)
         return doc
 
 class DecimalNormalizer(BaseNormalizer):
