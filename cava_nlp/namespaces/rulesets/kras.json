@@ -1,0 +1,20 @@
+{
+    "token": [
+        [
+            {"LOWER": {"IN": ["kras", "kiras"]}},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": "2", "OP": "?"}
+        ],
+        [
+            {"LOWER": {"IN": ["k", "ki"]}}, 
+            {"IS_PUNCT": true, "OP": "?"},
+            {"LOWER": "ras"},
+            {"TEXT": "2", "OP": "?"}
+        ],
+        [
+            {"LOWER": "g"},
+            {"TEXT": {"IN": ["12", "13", "61"]}},
+            {"LOWER": {"IN": ["x"]}}
+        ]
+    ]
+}

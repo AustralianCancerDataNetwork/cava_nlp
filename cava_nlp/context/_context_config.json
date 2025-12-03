@@ -1498,7 +1498,7 @@
       "pattern": [
         {
           "LOWER": {
-            "IN": ["was", "is", "are"]
+            "IN": ["was", "is", "are", "returned"]
           }
         },
         {
@@ -1507,7 +1507,8 @@
           }
         }
       ],
-      "direction": "BACKWARD"
+      "direction": "BACKWARD",
+      "max_targets": 1
     },
     {
       "category": "NEGATED_EXISTENCE",

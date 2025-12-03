@@ -1,0 +1,17 @@
+{
+    "token": 
+    [
+        [
+            {"LOWER": "pdl"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": "1"}
+        ],
+        [
+            {"LOWER": "pd"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"LOWER": "l"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": "1"}
+        ]
+    ]
+}

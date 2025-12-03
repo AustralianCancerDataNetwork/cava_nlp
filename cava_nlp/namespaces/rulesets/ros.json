@@ -1,0 +1,13 @@
+{
+    "token":
+    [
+        [
+            {"LOWER": {"IN": ["c", "cd", "ezr", "sdc"]}, "OP": "?"},
+            {"LIKE_NUM": true, "OP": "?"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"LOWER": {"IN": ["ros", "cros"]}},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": "1", "OP": "?"}
+        ]
+    ]
+}

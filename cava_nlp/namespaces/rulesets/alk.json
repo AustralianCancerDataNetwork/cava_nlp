@@ -1,0 +1,21 @@
+{
+    "token":
+    [
+        [
+            {"LOWER": "alk"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": "1", "OP": "?"}
+        ],
+        [
+            {"LOWER": {"IN": ["eml", "tgf", "kif", "cd"]}}, 
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": {"IN": ["4", "5"]}, "OP": "?"},
+            {"LOWER": "b", "OP": "?"}
+        ],
+        [
+            {"LOWER": "cd"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"TEXT": {"IN": ["246", "74"]}}
+        ]
+    ]
+}

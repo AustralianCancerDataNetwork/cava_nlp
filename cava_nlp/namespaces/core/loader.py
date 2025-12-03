@@ -44,8 +44,12 @@ def load_pattern_file(filename: str):
         raise ValueError(
             f"Invalid JSON after interpolation in {filename}: {e}"
         ) from e
+    
+    try:
+        validate_pattern_schema(data, filename)
+    except Exception as e:
+        raise ValueError(f"Pattern schema validation failed for {filename}: {e}") from e
 
-    validate_pattern_schema(data, filename)
     return data
 
 def _merge_components(base: dict, other: dict) -> dict:

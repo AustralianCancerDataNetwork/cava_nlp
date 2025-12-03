@@ -121,9 +121,9 @@ class DecimalNormalizer(BaseNormalizer):
     NAME = "decimal"
     EXTENSIONS = ["value"]
     PATTERNS = [
-            [
+            [ 
                 {"IS_DIGIT": True, "LIKE_NUM": True}, 
-                {"ORTH": {"IN": ['.', ',']}, 'SPACY': False}, 
+                {"ORTH": {"IN": ['.']}, 'SPACY': False}, 
                 {"IS_DIGIT": True, "LIKE_NUM": True}
             ]
         ]

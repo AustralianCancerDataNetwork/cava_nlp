@@ -4,21 +4,27 @@ components:
     factory: rule_engine
     config:
       token_label: ecog
-      value_label: ecog_value
       entity_label: ECOG
-      token_patterns: ${rulesets.ecog.token}
-      value_patterns: ${rulesets.ecog.value}
-      exclusions: ${rulesets.ecog.exclusions}
-      merge_ents: true
-      debug: true
-  variant_status:
+      patterns:
+        ecog:
+          token_patterns: ${rulesets.ecog.token}
+          value_patterns: ${rulesets.ecog.value}
+          exclusions: ${rulesets.ecog.exclusions}
+  variants_of_interest:
     factory: rule_engine
     config:
       token_label: variant
-      value_label: variant_value
       entity_label: GENOMIC
-      token_patterns: ${rulesets.genomic.token}
-      value_patterns: ${rulesets.genomic.value}
-      exclusions: ${rulesets.genomic.exclusions}
-      merge_ents: true
-      debug: true
+      patterns:
+        alk:
+          value: alk
+          token_patterns: ${rulesets.alk.token}
+        kras:
+          value: kras
+          token_patterns: ${rulesets.kras.token}
+        pdl1:
+          value: pdl1
+          token_patterns: ${rulesets.pdl1.token}
+        ros:
+          value: ros
+          token_patterns: ${rulesets.ros.token}

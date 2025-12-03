@@ -1,6 +1,0 @@
-{
-  "token": ${constructs.value_extractor_constructs.genomic_variants},
-  "value": [],
-  "norm": [],
-  "exclusions": []
-}

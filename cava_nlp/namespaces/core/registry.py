@@ -83,3 +83,4 @@ def resolve_construct(path: str) -> Any:
         raise KeyError(f"constructs.{module_name} has no attribute {attr!r}")
 
     return getattr(module, attr)
+ 

@@ -28,6 +28,6 @@ def validate_pattern_schema(patterns: Dict[str, Any], filename: str):
     Ensures that 'token', 'value', 'norm', 'exclusions' (if present) are lists of patterns,
     and that each pattern is a list of dicts.
     """
-    for key in ("token", "value", "norm", "exclusions"):
+    for key in ("token", "value", "exclusions"):
         if key in patterns:
             _validate_pattern_list(key, patterns[key], filename)
