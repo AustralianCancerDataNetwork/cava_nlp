@@ -32,8 +32,6 @@ def build_cava_suffixes():
         r"\+\+\+", r"\+\+", r"\+", "--"
     ]
 
-    base = [s for s in base if "GB" not in s] # type: ignore
-
     return extra + base
 
 

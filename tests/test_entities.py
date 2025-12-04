@@ -31,6 +31,14 @@ def nlp():
             "component_name": "ecog_status",   
         },
     )
+    n.add_pipe(
+        "rule_engine",
+        name="variants_of_interest",
+        config={
+            "engine_config_path": None,       # loading and testing default rule engine only
+            "component_name": "variants_of_interest",   
+        },
+    )
     return n
 
 @pytest.fixture(params=load_csv_rows("entity_fixtures.csv"))
