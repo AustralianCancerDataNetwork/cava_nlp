@@ -78,16 +78,13 @@ def test_rule_engine_from_csv(scenario):
             f"ACTUAL:      {spans}\n"
         )
 
-        for text, span in spans.items():
-            if text not in sc.expected_attributes:
-                continue  # no attribute expectations here
-
-            tok = sc.doc[span.start]
-            expected_attrs = sc.expected_attributes[text]
-            for attr, expected_val in expected_attrs.items():
-                actual_val = getattr(tok._, attr)
+    for attr, expected_attr in sc.expected_attributes.items():
+        for span in sc.doc.spans.get(attr, []):
+            expected_val = expected_attr.get(span.text)
+            if expected_val:
+                actual_val = getattr(span._, 'value')
                 assert actual_val == expected_val, (
-                    f"\nFAILED ATTRIBUTE CHECK: {sc.name} (pipe: {pipe}, entity: {text}, attr: {attr})\n"
+                    f"\nFAILED ATTRIBUTE CHECK: {sc.name} (pipe: {pipe}, entity: {span.text}, attr: {pipe})\n"
                     f"INPUT:       {sc.input!r}\n"
                     f"EXPECTED:    {expected_val}\n"
                     f"ACTUAL:      {actual_val}\n"

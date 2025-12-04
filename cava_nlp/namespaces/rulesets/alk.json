@@ -4,7 +4,11 @@
         [
             {"LOWER": "alk"},
             {"IS_PUNCT": true, "OP": "?"},
-            {"TEXT": "1", "OP": "?"}
+            {"TEXT": "1", "OP": "?"},
+            {"LOWER": {"IN": ["g", "l"]}, "OP": "?"},
+            {"LIKE_NUM": true, "OP": "?"},
+            {"LOWER": {"IN": ["a", "r", "m"]}, "OP": "?"}
+
         ],
         [
             {"LOWER": {"IN": ["eml", "tgf", "kif", "cd"]}}, 

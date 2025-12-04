@@ -218,7 +218,7 @@ class DateNormalizer(BaseNormalizer):
             dt = datetime.strptime(span.text, "%Y-%m-%d")
         except ValueError:
             # todo: make this configurable for non-au users
-            dt = dateparser.parse(span.text, settings={'DATE_ORDER': 'DMY'})
+            dt = dateparser.parse(span.text, settings={'DATE_ORDER': 'DMY', "PREFER_DAY_OF_MONTH": 'first'})
         return NormalisationResult(
             norm=dt.strftime("%Y-%m-%d") if dt else span.text,
             attrs={"value": dt}

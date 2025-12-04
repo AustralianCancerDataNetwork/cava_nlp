@@ -2,7 +2,7 @@
     "token":
     [
         [
-            {"LOWER": {"IN": ["c", "cd", "ezr", "sdc"]}, "OP": "?"},
+            {"LOWER": {"IN": ["c", "cd", "ezr", "sdc", "slc"]}, "OP": "?"},
             {"LIKE_NUM": true, "OP": "?"},
             {"IS_PUNCT": true, "OP": "?"},
             {"LOWER": {"IN": ["ros", "cros"]}},

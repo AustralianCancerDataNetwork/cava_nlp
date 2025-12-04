@@ -1,0 +1,12 @@
+{
+    "token":
+    [
+        [
+            {"LOWER": "braf"},
+            {"IS_PUNCT": true, "OP": "?"},
+            {"LOWER": {"IN": ["g", "v"]}, "OP": "?"},
+            {"LIKE_NUM": true, "OP": "?"},
+            {"LOWER": {"IN": ["a", "e"]}, "OP": "?"} 
+        ]
+    ]
+}

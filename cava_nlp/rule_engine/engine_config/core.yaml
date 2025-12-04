@@ -3,7 +3,7 @@ components:
   ecog_status:
     factory: rule_engine
     config:
-      token_label: ecog
+      span_label: ecog
       entity_label: ECOG
       patterns:
         ecog:
@@ -13,7 +13,7 @@ components:
   variants_of_interest:
     factory: rule_engine
     config:
-      token_label: variant
+      span_label: variant
       entity_label: GENOMIC
       patterns:
         alk:
@@ -28,3 +28,9 @@ components:
         ros:
           value: ros
           token_patterns: ${rulesets.ros.token}
+        egfr:
+          value: egfr
+          token_patterns: ${rulesets.egfr.token}
+        braf:
+          value: braf
+          token_patterns: ${rulesets.braf.token}

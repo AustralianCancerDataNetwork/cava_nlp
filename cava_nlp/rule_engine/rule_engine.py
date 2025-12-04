@@ -1,6 +1,6 @@
 
 from spacy.matcher import Matcher
-from spacy.tokens import Span, Token
+from spacy.tokens import Span, Token, SpanGroup
 from spacy.util import filter_spans
 
 Span.set_extension("value", default=None, force=True)
@@ -11,14 +11,13 @@ class RuleEngine:
 
     Config (per instance):
 
-    - token_label: str               # token-level boolean flag, e.g. "weight"
-    - value_label: Optional[str]     # token-level numeric/string value, e.g. "weight_value"
+    - span_label: str                # span-group name e.g "weight"
     - entity_label: Optional[str]    # span label, e.g. "WEIGHT"
-    - token_patterns: list           # spaCy Matcher patterns (outer list)
-    - value_patterns: Optional[list] # patterns to extract numeric portion within span
-    - exclusions: Optional[list]     # patterns to suppress spans
-    - merge_ents: bool               # whether to merge matched span into a single token
-    - debug: bool                    # whether to log rule activity to doc._.rule_debug
+    - patterns: dict                 # spaCy Matcher patterns (outer list)
+    - patterns.value: Optional[float|str]     # literal value to assign to matched span
+    - patterns.value_patterns: Optional[list] # patterns to extract numeric portion within span
+    - patterns.exclusions: Optional[list]     # patterns to suppress spans
+    - merge_ents: Optional[bool]              # whether to merge matched span into a single token
     """
 
     def __init__(self, nlp, name, config):
@@ -26,15 +25,16 @@ class RuleEngine:
         self.name = name
         self.cfg = config
 
-        self.token_label = config.get("token_label")
+        self.span_label = config.get("span_label")
         self.entity_label = config.get("entity_label", "")
-        Token.set_extension(self.token_label, default=None, force=True)
+        self.merge_ents = config.get("merge_ents", False)
+        Span.set_extension(self.span_label, default=None, force=True)
 
         self.matchers = {}
         patterns_cfg = config.get("patterns", {})
         for var_name, cfg in patterns_cfg.items():
             
-            literal_value = cfg.get("value")    # value stored in token._.<token_label>
+            literal_value = cfg.get("value")  
             
             val_matcher = None
             exclusion_matcher = None
@@ -44,14 +44,14 @@ class RuleEngine:
                 if val_patterns is None:
                     raise ValueError(f"Either 'value' or 'value_patterns' must be specified for pattern '{var_name}'")
                 val_matcher = Matcher(self.vocab)
-                val_matcher.add(self.token_label + "_value", val_patterns)
+                val_matcher.add(self.span_label + "_value", val_patterns)
             
             exclusion = cfg.get("exclusions")
             if exclusion is not None:
                 exclusion_matcher = Matcher(self.vocab)
-                exclusion_matcher.add(self.token_label + "_exclusion", exclusion)
+                exclusion_matcher.add(self.span_label + "_exclusion", exclusion)
 
-            pats = cfg["token_patterns"]  # required
+            pats = cfg["token_patterns"]  
             
             m = Matcher(self.vocab)
             m.add(var_name, pats)
@@ -103,9 +103,6 @@ class RuleEngine:
                 sp = Span(doc, s, e, label=group_name)
                 sp._.value = val
                 var_spans.append(sp)
-
-            var_spans = filter_spans(var_spans)
-
             # apply exclusions
             if exclusion_matcher:
                 excl = exclusion_matcher(doc)
@@ -115,7 +112,7 @@ class RuleEngine:
                     for ex in excl_spans
                 )]
             spans.extend(var_spans)
-        return spans
+        return filter_spans(spans)
 
     def __call__(self, doc):
         spans = self.find_spans(doc)
@@ -123,8 +120,9 @@ class RuleEngine:
             for sp in spans:
                 if self.cfg.get("merge_ents", False):
                     retok.merge(sp)
-                for tok in sp:
-                    tok._.set(self.token_label, sp._.value)
+                if self.span_label not in doc.spans:
+                    doc.spans[self.span_label] = SpanGroup(doc)
+                doc.spans[self.span_label].append(sp)
                 if self.entity_label:
                     doc.ents += (Span(doc, sp.start, sp.end, label=self.entity_label),)
         return doc
