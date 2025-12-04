@@ -32,4 +32,9 @@ build-backend = "setuptools.build_meta"
 include-package-data = true
 
 [tool.setuptools.package-data]
-"*" = ["*.json"]
+"*" = [
+  "namespaces/*.json",
+  "namespaces/**/*.json",
+  "rule_engine/*.yaml",
+  "rule_engine/**/*.yaml",
+]
