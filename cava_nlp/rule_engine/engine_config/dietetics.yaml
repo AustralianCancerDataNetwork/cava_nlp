@@ -10,3 +10,12 @@ components:
       value_patterns: ${rulesets.weight.value}
       exclusions: ${rulesets.weight.exclusions}
       merge_ents: true
+  pgsga_value:
+    factory: rule_engine
+    config:
+      span_label: pgsga
+      entity_label: MALNUTRITION
+      patterns:
+        pgsga:
+          value_patterns: ${rulesets.pgsga.value}
+          token_patterns: ${rulesets.pgsga.token}

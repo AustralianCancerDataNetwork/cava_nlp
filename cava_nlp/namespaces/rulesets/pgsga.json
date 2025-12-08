@@ -1,0 +1,4 @@
+{
+  "token": ${constructs.value_extractor_constructs.pgsga_patterns},
+  "value": ${constructs.value_extractor_constructs.pgsga_val_patterns}
+}
