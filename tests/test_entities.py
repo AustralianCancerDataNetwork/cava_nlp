@@ -27,7 +27,7 @@ def nlp():
         "rule_engine",
         name="ecog_value",
         config={
-            "engine_config_path": None,       # loading and testing default rule engine only
+            "engine_config_path": None,      
             "component_name": "ecog_status",   
         },
     )
@@ -35,8 +35,16 @@ def nlp():
         "rule_engine",
         name="variants_of_interest",
         config={
-            "engine_config_path": None,       # loading and testing default rule engine only
+            "engine_config_path": None,      
             "component_name": "variants_of_interest",   
+        },
+    )
+    n.add_pipe(
+        "rule_engine",
+        name="pgsga_value",
+        config={
+            "engine_config_path": None,       
+            "component_name": "pgsga_value",   
         },
     )
     return n
@@ -76,9 +84,31 @@ def extract_ents(doc, label):
 
 def test_rule_engine_from_csv(scenario):
     sc = scenario
+
     for pipe in sc.test_pipes:
         spans = extract_ents(sc.doc, pipe)
+
         entities = {k.text: v for k, v in spans.items()}
+        actual_ent_texts = {span.text for span in sc.doc.ents if span.label_ == pipe}
+
+        expected_entities = set(entities.keys())
+
+        missing_ents = expected_entities - actual_ent_texts
+        unexpected_ents = actual_ent_texts - expected_entities
+
+
+        assert not missing_ents, (
+            f"\nFAILED: Missing expected spans for {sc.name} (attr: {pipe})\n"
+            f"EXPECTED: {expected_entities}\n"
+            f"ACTUAL: {actual_ent_texts}\n"
+        )
+
+        assert not unexpected_ents, (
+            f"\nFAILED: Unexpected spans for {sc.name} (attr: {pipe})\n"
+            f"EXPECTED: {expected_entities}\n"
+            f"ACTUAL: {actual_ent_texts}\n"
+        )
+
         assert entities == {k: v for k, v in sc.expected_entities.items() if v == pipe}, (
             f"\nFAILED ENTITY EXTRACTION: {sc.name} (pipe: {pipe})\n"
             f"INPUT:       {sc.input!r}\n"
@@ -87,7 +117,29 @@ def test_rule_engine_from_csv(scenario):
         )
 
     for attr, expected_attr in sc.expected_attributes.items():
-        for span in sc.doc.spans.get(attr, []):
+
+        spans = sc.doc.spans.get(attr, [])
+        actual_span_texts = {span.text for span in spans}
+
+        expected_spans = set(expected_attr.keys())
+
+        missing_spans = expected_spans - actual_span_texts
+        unexpected_spans = actual_span_texts - expected_spans
+
+
+        assert not missing_spans, (
+            f"\nFAILED: Missing expected spans for {sc.name} (attr: {pipe})\n"
+            f"EXPECTED: {expected_spans}\n"
+            f"ACTUAL: {actual_span_texts}\n"
+        )
+
+        assert not unexpected_spans, (
+            f"\nFAILED: Unexpected spans for {sc.name} (attr: {pipe})\n"
+            f"EXPECTED: {expected_spans}\n"
+            f"ACTUAL: {actual_span_texts}\n"
+        )
+
+        for span in spans:
             expected_val = expected_attr.get(span.text)
             if expected_val:
                 actual_val = getattr(span._, 'value')

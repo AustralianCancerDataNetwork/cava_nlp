@@ -1,6 +1,6 @@
 from spacy.matcher import Matcher
 from spacy.util import filter_spans
-from spacy.tokens import Token
+from spacy.tokens import Token, Doc
 from cava_nlp.namespaces.regex import (
     date_patterns,
     times,
@@ -221,38 +221,88 @@ class DateNormalizer(BaseNormalizer):
         except ValueError:
             # todo: make this configurable for non-au users
             dt = dateparser.parse(span.text, settings={'DATE_ORDER': 'DMY', "PREFER_DAY_OF_MONTH": 'first'})
+        norm=dt.strftime("%Y-%m-%d") if dt else span.text
         return NormalisationResult(
-            norm=dt.strftime("%Y-%m-%d") if dt else span.text,
-            attrs={"value": dt}
+            norm=norm,
+            attrs={"value": norm}
         )
     
+
+
+TIME_FORMATS = [
+    "%H:%M",       # 07:30
+    "%I:%M%p",     # 7:30pm
+    "%I%p",        # 7pm
+    "%H%M",        # 1330
+]
+
+def parse_single_time(text: str):
+    """
+    Try strict time parsing first, then fallback to dateparser.
+    Return a datetime or None.
+    """
+    for fmt in TIME_FORMATS:
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            pass
+    
+    # fallback: let dateparser guess time
+    dt = dateparser.parse(
+        text,
+        settings={
+            "PREFER_DATES_FROM": "future",
+            "TIMEZONE": "UTC",
+            "RETURN_AS_TIMEZONE_AWARE": False
+        },
+    )
+    return dt
+
+def normalize_time(text: str):
+    """
+    Convert text to canonical HH:MM (24h).
+    Return None if failed.
+    """
+    dt = parse_single_time(text)
+    if not dt:
+        return None
+    return dt.strftime("%H:%M")
+
 class TimeNormalizer(BaseNormalizer):
     NAME = "time"
     EXTENSIONS = ["value"]   
 
     PATTERNS = [
-        [  # handles: "5 pm", "10am", "14hrs"
+        [  
             {"LIKE_NUM": True},
             {"LOWER": {"IN": [t.lower() for t in times]}},
+        ],
+        [
+            {"LIKE_NUM": True},
+            {"TEXT": {"IN": [":"]}},
+            {"LIKE_NUM": True},
+            {"LOWER": {"IN": [t.lower() for t in times]}},
+        ],
+        [
+            {"LOWER": {"IN": [str(t) for t in range(24)]}},
+            {"TEXT": {"IN": [":"]}},
+            {"TEXT": {"REGEX": r"^[0-5][0-9]$"}},
+            {"TEXT": {"IN": [":"]}, "OP": "?"},
+            {"TEXT": {"REGEX": r"^[0-5][0-9]$"}, "OP": "?"},
         ]
     ]
 
     def compute(self, span):
-        num = span[0].text
-        unit = span[1].text.lower()
-
-        # Best-effort numeric conversion
-        try:
-            value = float(num)
-        except ValueError:
-            value = num  # leave as string if unexpected format
-
+        norm = normalize_time(span.text)
+        if not norm:
+            return NormalisationResult(
+                norm=span.text,
+                attrs={"value": span.text},
+            )
+        
         return NormalisationResult(
-            norm=f"{num}{unit}",
-            attrs={
-                "value": value,
-                "unit": unit,
-            }
+            norm=norm,
+            attrs={"value": norm},
         )
     
 class UnitNormalizer(BaseNormalizer):

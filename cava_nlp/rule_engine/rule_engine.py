@@ -162,8 +162,8 @@ class RuleEngine:
         matches = matcher(span)
         raw = []
         for _, s, e in matches:
-            raw.append(span[s:e].text.replace(",", ""))
-        return raw
+            raw.append(span[s:e])
+        return [t.text for t in filter_spans(raw)]
 
     def find_spans(self, doc):
         spans = []

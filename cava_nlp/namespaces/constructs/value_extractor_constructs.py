@@ -14,7 +14,7 @@ weight_patterns = [[{"_":{"unit": True}, "NORM": {"IN": weight_units}}]]
 #                  ]
 
 
-pgsga_val_patterns = [[{"TEXT": {"REGEX": r"\d[abc]"}}],
+pgsga_val_patterns = [#[{"TEXT": {"REGEX": r"\d[abc]"}}],
                       [{"TEXT": {"IN": ["("]}, "OP": "?"}, 
                        {"IS_DIGIT": True},
                        {"TEXT": {"IN": ["/", ","]},  "OP": "?"},

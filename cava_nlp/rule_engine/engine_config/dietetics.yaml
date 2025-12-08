@@ -19,6 +19,7 @@ components:
       span_label: pgsga
       entity_label: MALNUTRITION
       value_type: str
+      value_aggregation: join
       patterns:
         pgsga:
           value_patterns: ${rulesets.pgsga.value}

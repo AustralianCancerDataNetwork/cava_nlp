@@ -1,5 +1,3 @@
-# tests/utils/fixture_loader.py
-
 import csv
 import ast
 import os
