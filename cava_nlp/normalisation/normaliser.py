@@ -122,7 +122,8 @@ class DecimalNormalizer(BaseNormalizer):
     EXTENSIONS = ["value"]
     PATTERNS = [
             [ 
-                {"IS_DIGIT": True, "LIKE_NUM": True}, 
+                # strict about trailing spaces for reassembling decimal points
+                {"IS_DIGIT": True, "LIKE_NUM": True, "SPACY": False}, 
                 {"ORTH": {"IN": ['.']}, 'SPACY': False}, 
                 {"IS_DIGIT": True, "LIKE_NUM": True}
             ]
@@ -154,8 +155,8 @@ class SciNotNormalizer(BaseNormalizer):
                 {"IS_DIGIT": True}
             ],
             [
-                {"IS_DIGIT": True},
-                {"LOWER": "e"},
+                {"IS_DIGIT": True, 'SPACY': False},
+                {"LOWER": "e", 'SPACY': False},
                 {"TEXT": "+", "OP": "?"},
                 {"IS_DIGIT": True}
             ]
@@ -166,6 +167,7 @@ class SciNotNormalizer(BaseNormalizer):
             base = float([t.text for t in span if t.like_num][0])
             raw_exp = span[-1].text.replace("^", "").replace("**", "")
             exp = int(raw_exp)
+            value = base ** exp
         except Exception:
             return NormalisationResult(
                 norm=span.text,
@@ -176,7 +178,7 @@ class SciNotNormalizer(BaseNormalizer):
             attrs={
                 "base": base,
                 "exp": exp,
-                "value": base ** exp
+                "value": value
             }
         )
 

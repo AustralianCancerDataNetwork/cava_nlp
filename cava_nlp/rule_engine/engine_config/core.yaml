@@ -5,6 +5,8 @@ components:
     config:
       span_label: ecog
       entity_label: ECOG
+      value_type: int
+      value_aggregation: max
       patterns:
         ecog:
           token_patterns: ${rulesets.ecog.token}
@@ -15,6 +17,8 @@ components:
     config:
       span_label: variant
       entity_label: GENOMIC
+      value_type: str
+      value_aggregation: join
       patterns:
         alk:
           value: alk

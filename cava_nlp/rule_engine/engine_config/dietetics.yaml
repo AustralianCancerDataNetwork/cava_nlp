@@ -6,15 +6,19 @@ components:
       token_label: weight
       value_label: weight_value
       entity_label: WEIGHT
-      token_patterns: ${rulesets.weight.token}
-      value_patterns: ${rulesets.weight.value}
-      exclusions: ${rulesets.weight.exclusions}
-      merge_ents: true
+      value_type: float
+      patterns:
+        weight:
+          token_patterns: ${rulesets.weight.token}
+          value_patterns: ${rulesets.weight.value}
+          exclusions: ${rulesets.weight.exclusions}
+          merge_ents: true
   pgsga_value:
     factory: rule_engine
     config:
       span_label: pgsga
       entity_label: MALNUTRITION
+      value_type: str
       patterns:
         pgsga:
           value_patterns: ${rulesets.pgsga.value}

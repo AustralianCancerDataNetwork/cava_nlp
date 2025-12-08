@@ -2,8 +2,90 @@
 from spacy.matcher import Matcher
 from spacy.tokens import Span, Token, SpanGroup
 from spacy.util import filter_spans
+from functools import partial
 
 Span.set_extension("value", default=None, force=True)
+
+# this could theoretically be extended to support user-defined 
+# types or more complex casting but for now we just support 
+# basic built-in types
+
+def safe_cast(func, value):
+    if value is None:
+        return None
+    try:
+        return func(value)
+    except (ValueError, TypeError):
+        return None
+
+CASTERS = {
+  "int": partial(safe_cast, int),
+  "float": partial(safe_cast, float),
+  "str": partial(safe_cast, str),
+}
+
+def agg_max(raw_values, caster=CASTERS["float"]):
+    # choose the max numeric value; ignore non-numeric
+    nums = []
+    for v in raw_values:
+        try:
+            nums.append(caster(v))
+        except ValueError:
+            pass
+    if not nums:
+        return None
+    return max(nums)
+
+def agg_min(raw_values, caster=CASTERS["float"]):
+    nums = []
+    for v in raw_values:
+        try:
+            nums.append(caster(v))
+        except ValueError:
+            pass
+    if not nums:
+        return None
+    return min(nums)
+
+def agg_join(raw_values):
+    if not raw_values:
+        return ''
+    return " ".join(raw_values)
+
+def agg_first(raw_values):
+    if not raw_values:
+        return None
+    return raw_values[0]
+
+AGGREGATORS = {
+    "max":   agg_max,
+    "min":   agg_min,
+    "join":  agg_join,
+    "first": agg_first,
+}
+
+class ValueResolver:
+    def __init__(self, caster, aggregator):
+        self.caster = caster          # callable: raw to typed
+        self.aggregator = aggregator  # callable: list[typed] to typed/None
+
+    def resolve(self, raw_values, literal=None, fallback=None):
+        """
+        Decide final value:
+
+        1) literal if provided
+        2) aggregated raw values if any
+        3) fallback if no extracted values
+        """
+        if literal is not None:
+            return literal
+
+        raw = self.aggregator(raw_values)
+        if raw is not None:
+            return self.caster(raw)   # cast after aggregation
+
+        return fallback
+
 
 class RuleEngine:
     """
@@ -13,6 +95,7 @@ class RuleEngine:
 
     - span_label: str                # span-group name e.g "weight"
     - entity_label: Optional[str]    # span label, e.g. "WEIGHT"
+    - value_type: Optional[str]      # type to cast value to: "int", "float", "str" - defaults string
     - patterns: dict                 # spaCy Matcher patterns (outer list)
     - patterns.value: Optional[float|str]     # literal value to assign to matched span
     - patterns.value_patterns: Optional[list] # patterns to extract numeric portion within span
@@ -27,13 +110,23 @@ class RuleEngine:
 
         self.span_label = config.get("span_label")
         self.entity_label = config.get("entity_label", "")
+
+        value_type = config.get("value_type", "str").lower()
+        agg_name = config.get("value_aggregation", "first").lower()
+
+        self.resolver = ValueResolver(
+            caster=CASTERS[value_type] if value_type in CASTERS else CASTERS["str"],
+            aggregator=AGGREGATORS[agg_name] if agg_name in AGGREGATORS else AGGREGATORS["first"]
+        )
+
         self.merge_ents = config.get("merge_ents", False)
+        
         Span.set_extension(self.span_label, default=None, force=True)
 
         self.matchers = {}
         patterns_cfg = config.get("patterns", {})
-        for var_name, cfg in patterns_cfg.items():
-            
+
+        for var_name, cfg in patterns_cfg.items():    
             literal_value = cfg.get("value")  
             
             val_matcher = None
@@ -63,45 +156,31 @@ class RuleEngine:
                 "exclusion": exclusion_matcher 
             }
 
-    def get_value_from_span(self, span, config):
-        literal_value = config["literal_value"]
-        value_matcher = config["value_matcher"]
-
-        if literal_value is not None:
-            return literal_value
-
-        if not value_matcher:
-            return None
-
-        matches = value_matcher(span)
-        values = []
+    def _extract_raw_values(self, span, matcher):
+        if not matcher:
+            return []
+        matches = matcher(span)
+        raw = []
         for _, s, e in matches:
-            raw = span[s:e].text.replace(",", "")
-            try:
-                values.append(float(raw))
-            except:
-                values.append(raw)
-        
-        if not values:
-            return None
-        return max(values, key=lambda v: float(v) if isinstance(v, (int,float)) else -1)
+            raw.append(span[s:e].text.replace(",", ""))
+        return raw
 
     def find_spans(self, doc):
         spans = []
         for group_name, config in self.matchers.items():
             matcher = config.get("matcher")
             exclusion_matcher = config.get("exclusion")
-            literal_value = config.get("literal_value")
-            if literal_value is None:
-                literal_value = group_name
+            fallback = config.get("literal_value") or group_name
             matches = matcher(doc)
             var_spans = []
             for _, s, e in matches:
-                val = self.get_value_from_span(doc[s:e], config)
-                if val is None:
-                    val = literal_value
                 sp = Span(doc, s, e, label=group_name)
-                sp._.value = val
+                raw_values = self._extract_raw_values(doc[s:e], config.get("value_matcher"))
+                sp._.value = self.resolver.resolve(
+                    raw_values,
+                    literal=config.get("literal_value"),
+                    fallback=fallback
+                )
                 var_spans.append(sp)
             # apply exclusions
             if exclusion_matcher:
