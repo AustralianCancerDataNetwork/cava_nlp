@@ -1,6 +1,6 @@
 from spacy.matcher import Matcher
 from spacy.util import filter_spans
-from spacy.tokens import Token, Doc
+from spacy.tokens import Token, Doc, Span, SpanGroup
 from cava_nlp.namespaces.regex import (
     date_patterns,
     times,
@@ -93,24 +93,33 @@ class BaseNormalizer:
         if not spans:
             return doc
 
-        rule_spans = []
-        with doc.retokenize() as retok:
-            for span in spans:
-                res = self.compute(span)
-                retok.merge(span, attrs={"NORM": res.norm})
-                token = doc[span.start]
-                token._.kind = self.NAME
-                for attr, val in res.attrs.items():
-                    setattr(token._, attr, val)
-                setattr(token._, self.NAME, True) # type: ignore
-                new_ent = doc.char_span(token.idx, token.idx + len(token.text), label=self.NAME) 
-                if new_ent is not None: 
-                    rule_spans.append(new_ent)
+        matches = []
+        for span in spans:
+            res = self.compute(span)
+            matches.append(
+                {
+                    "start_char": span.start_char,
+                    "end_char": span.end_char,
+                    "res": res,
+                }
+            )
 
-        if "rule_engine" not in doc.spans:
-            doc.spans["rule_engine"] = []
-        doc.spans["rule_engine"].extend(rule_spans)
+        with doc.retokenize() as retok:
+            for span, match in zip(spans, matches):
+                res = match["res"]
+
+                head = span[0]
+
+                if hasattr(head._, "kind"):
+                    head._.kind = self.NAME
+
+                for attr, val in res.attrs.items():
+                    setattr(head._, attr, val)
+
+                setattr(head._, self.NAME, True)  # type: ignore
+                retok.merge(span, attrs={"NORM": res.norm})
         return doc
+    
 
 class DecimalNormalizer(BaseNormalizer):
     """
@@ -350,7 +359,18 @@ class ClinicalNormalizer:
             UnitNormalizer(nlp)
         ]
 
+    def create_span_groups(self, doc):
+        groups = {}
+        for token in doc:
+            if token._.kind:
+                label = token._.kind
+                sp = Span(doc, token.i, token.i+1, label=label)
+                groups.setdefault(label, []).append(sp)
+        for label, spans in groups.items():
+            doc.spans[label] = SpanGroup(doc, spans=spans)
+
     def __call__(self, doc):
         for norm in self.normalizers:
             doc = norm.apply(doc)
+        self.create_span_groups(doc)
         return doc
