@@ -7,5 +7,7 @@
 - upgraded alpha to work with poetry & python 3.11 = 0.3.0
 ## 1.0.0 
 - major refactor utilising rule_engine, namespaces
+- new test cases
+- normalisation module pulled into its own space
 - released cava lang beta 1.0 
 - note that this is stuck on python 3.11 due to pysbd escape issue PEP701 also changed to uv versions for dependencies
