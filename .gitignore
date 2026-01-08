@@ -27,3 +27,4 @@ pysqlite3*
 Pipfile.lock
 *.ipynb
 .DS_Store
+old
