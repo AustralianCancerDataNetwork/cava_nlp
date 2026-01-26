@@ -11,3 +11,5 @@
 - normalisation module pulled into its own space
 - released cava lang beta 0.8
 - note that this is stuck on python 3.11 due to pysbd escape issue PEP701 also changed to uv versions for dependencies
+## 0.8.1
+- loosenend strprtf version requirements for compatibility

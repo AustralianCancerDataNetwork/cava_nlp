@@ -87,7 +87,7 @@ wheels = [
 
 [[package]]
 name = "cava-nlp"
-version = "1.0"
+version = "0.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "dateparser" },
@@ -108,7 +108,7 @@ requires-dist = [
     { name = "medspacy", specifier = "==1.3.0" },
     { name = "python-dateutil", specifier = "==2.8.2" },
     { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "striprtf", specifier = "==0.0.2" },
+    { name = "striprtf", specifier = ">=0.0.2" },
 ]
 
 [package.metadata.requires-dev]
