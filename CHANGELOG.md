@@ -17,5 +17,7 @@
 - added custom context handlers back in
 ## 0.8.3
 - bugfix for overly enthusiastic removal of unused imports
-## 0.8.3
+## 0.8.4
 - bugfix for overwriting medspacy context defaults
+## 0.8.5
+- additional bugfix for overwriting medspacy context defaults

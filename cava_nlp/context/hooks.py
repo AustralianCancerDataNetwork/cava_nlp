@@ -62,7 +62,7 @@ def enable_context(
         MEDSPACY_CONTEXT_FACTORY,
         name=name,
         config={
-            "span_attrs": config.span_attrs,
+            "span_attrs": merged_span_attrs,
             "rules": str(config.rules_path),
         },
         before=before,
