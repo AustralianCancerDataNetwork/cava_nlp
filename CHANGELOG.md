@@ -13,3 +13,5 @@
 - note that this is stuck on python 3.11 due to pysbd escape issue PEP701 also changed to uv versions for dependencies
 ## 0.8.1
 - loosenend strprtf version requirements for compatibility
+## 0.8.2
+- added custom context handlers back in

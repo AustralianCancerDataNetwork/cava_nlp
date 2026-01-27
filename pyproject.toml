@@ -1,6 +1,6 @@
 [project]
 name = "cava-nlp"
-version = "0.8.1"
+version = "0.8.2"
 description = "CaVa Platform Natural Language Processing spaCy components and pipeline"
 readme = "README.md"
 
@@ -33,4 +33,17 @@ include-package-data = true
   "namespaces/**/*.json",
   "rule_engine/*.yaml",
   "rule_engine/**/*.yaml",
+]
+
+[project.optional-dependencies]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.25",
+  "mkdocs-gen-files>=0.5",
+  "mkdocs-literate-nav>=0.6",
+  "mkdocs-section-index>=0.3",
+  "mkdocs-autorefs>=1.0",
+  "pymdown-extensions>=10.8",
+  "mkdocs-mermaid2-plugin>=1.2",
 ]
