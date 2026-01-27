@@ -1,5 +1,7 @@
 from spacy.language import Language
 import json
+from typing import Any, Dict, Mapping
+from medspacy.context import DEFAULT_ATTRIBUTES  # type: ignore[import-untyped]
 from pathlib import Path
 from .config import ContextConfig, DEFAULT_CONTEXT_CONFIG
 from .registry import register_context_extensions
@@ -19,6 +21,26 @@ def _validate_context_rules(path: Path) -> None:
             f"Context rules file must contain a top-level 'context_rules' key: {path}"
         )
 
+def _merge_span_attrs(
+    extra: Mapping[str, Mapping[str, Any]] | None,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Merge medSpaCy DEFAULT_ATTRIBUTES with CaVa / user-defined additions.
+
+    - medSpaCy defaults are preserved
+    - extra entries override defaults if keys collide
+    - returns a fresh dict (no mutation of inputs)
+    """
+
+    merged: Dict[str, Dict[str, Any]] = {
+        key: dict(value) for key, value in DEFAULT_ATTRIBUTES.items()
+    }
+
+    if extra:
+        for key, value in extra.items():
+            merged[key] = dict(value)
+
+    return merged
 
 def enable_context(
     nlp: Language,
@@ -28,7 +50,8 @@ def enable_context(
     before: str | None = None,
     after: str | None = None,
 ) -> None:
-    register_context_extensions(span_attrs=config.span_attrs)
+    merged_span_attrs = _merge_span_attrs(config.span_attrs)
+    register_context_extensions(span_attrs=merged_span_attrs)
     
     _validate_context_rules(config.rules_path)
 
