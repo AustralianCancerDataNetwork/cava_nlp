@@ -21,3 +21,6 @@
 - bugfix for overwriting medspacy context defaults
 ## 0.8.5
 - additional bugfix for overwriting medspacy context defaults
+## 0.8.6
+- new context resolution step - intended for lab results
+- modification to handle context profiles

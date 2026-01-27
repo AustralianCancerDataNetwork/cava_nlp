@@ -3,7 +3,7 @@ import json
 from typing import Any, Dict, Mapping
 from medspacy.context import DEFAULT_ATTRIBUTES  # type: ignore[import-untyped]
 from pathlib import Path
-from .config import ContextConfig, DEFAULT_CONTEXT_CONFIG
+from .config import ContextConfig, DEFAULT_CONTEXT_CONFIG, CONTEXT_PROFILES
 from .registry import register_context_extensions
 
 MEDSPACY_CONTEXT_FACTORY = "medspacy_context"
@@ -45,11 +45,28 @@ def _merge_span_attrs(
 def enable_context(
     nlp: Language,
     *,
-    config: ContextConfig = DEFAULT_CONTEXT_CONFIG,
+    config: ContextConfig | None = None,
     name: str = MEDSPACY_CONTEXT_FACTORY,
     before: str | None = None,
     after: str | None = None,
+    profile: str | None = None,
 ) -> None:
+    
+    if config and profile:
+        raise ValueError("Specify either 'config' or 'profile', not both")
+    
+    if profile:
+        if profile not in CONTEXT_PROFILES:
+            raise ValueError(f"Unknown context profile: {profile}")
+        profile_path = CONTEXT_PROFILES[profile]
+        config = ContextConfig(
+            span_attrs=DEFAULT_CONTEXT_CONFIG.span_attrs,
+            rules_path=profile_path
+        )
+    
+    if config is None:
+        config = DEFAULT_CONTEXT_CONFIG
+
     merged_span_attrs = _merge_span_attrs(config.span_attrs)
     register_context_extensions(span_attrs=merged_span_attrs)
     

@@ -1,0 +1,96 @@
+{
+  "context_rules": [
+    {
+      "literal": "pending",
+      "pattern": [
+            {
+                "LOWER": {"IN": ["pending", "awaiting", "await"] }
+            }
+        ],
+      "category": "UNCONFIRMED",
+      "direction": "BACKWARD"
+    },
+    {
+      "literal": "testing for",
+      "pattern": [
+            {
+                "LOWER": {"IN": ["sent", "workup", "test", "testing"] }
+            },
+            {
+                "LOWER": {"IN": ["for", "to"]},
+                "OP": "?"
+            }
+        ],
+      "category": "UNCONFIRMED",
+      "direction": "FORWARD"
+    },
+    {
+      "literal": "not done",
+      "pattern": [
+            {
+                "LOWER": {"IN": ["not"] }
+            },
+            {
+                "LOWER": {"IN": ["done", "completed", "performed", "sent", "ordered", "complete", "tested"]}
+            }
+        ],
+      "category": "UNCONFIRMED",
+      "direction": "FORWARD"
+    },
+    {
+      "literal": "positive",
+      "category": "POSITIVE",
+      "pattern": [
+            {
+                "LOWER": {"IN": ["positive", "detected", "elevated", "high", "confirmed", "present"] }
+            },
+            {
+                "LOWER": {"IN": ["for", "to"]},
+                "OP": "?"
+            }
+
+        ],
+      "direction": "BACKWARD"
+    },
+    {
+      "literal": "negative",
+      "category": "NEGATED_EXISTENCE",
+      "pattern": [
+              {
+                  "LOWER": {"IN": ["negative", "undetectable", "no", "normal"] }
+              },
+              {
+                  "LOWER": {"IN": ["for", "to"]},
+                  "OP": "?"
+              }
+  
+          ],
+      "direction": "BIDIRECTIONAL"
+    },
+    {
+      "category": "NEGATED_EXISTENCE",
+      "literal": "unless",
+      "pattern": [
+        {
+          "LOWER": {
+            "in": [
+              "unless",
+              "except",
+              "as",
+              "given",
+              "but",
+              "however",
+              "\n",
+              "nevertheless",
+              "yet",
+              "though",
+              "although"
+            ]
+          }
+        }
+      ],
+      "direction": "TERMINATE",
+      "max_targets": 1
+    }
+  ]
+}

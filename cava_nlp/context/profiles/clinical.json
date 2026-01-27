@@ -1608,26 +1608,6 @@
       "literal": "date_of",
       "pattern": [{ "_": { "date": true } }, { "LOWER": { "IN": [")"] } }],
       "direction": "BIDIRECTIONAL"
-    },
-    {
-      "category": "DATE_OF",
-      "literal": ".",
-      "pattern": [
-        {
-          "LOWER": { "IN": [".", ",", ";"] }
-        }
-      ],
-      "direction": "TERMINATE"
-    },
-    {
-      "category": "DATE_OF",
-      "literal": ".",
-      "pattern": [
-        {
-          "LOWER": { "IN": ["but", "no", "otherwise"] }
-        }
-      ],
-      "direction": "TERMINATE"
     }
   ]
 }

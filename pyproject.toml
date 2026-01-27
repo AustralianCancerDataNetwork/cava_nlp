@@ -1,6 +1,6 @@
 [project]
 name = "cava-nlp"
-version = "0.8.5"
+version = "0.8.6"
 description = "CaVa Platform Natural Language Processing spaCy components and pipeline"
 readme = "README.md"
 
@@ -26,6 +26,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["cava_nlp*"]
+exclude = ["notebooks*"]
 
 [tool.setuptools.package-data]
 "*" = [
