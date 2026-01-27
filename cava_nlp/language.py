@@ -1,10 +1,15 @@
 import re
 from spacy.lang.en import English
 from spacy.tokens import Doc
-from .tokenization.defaults import CaVaLangDefaults
-from .tokenization.preprocess import whitespace_preprocess
 from typing import Any
 from spacy.util import registry
+
+# unused imports required to register components
+from medspacy.sentence_splitting import PySBDSentenceSplitter # type: ignore
+from spacy.language import Language # type: ignore
+
+from .tokenization.defaults import CaVaLangDefaults
+from .tokenization.preprocess import whitespace_preprocess
 
 @registry.languages('cava_lang')
 class CaVaLang(English):

@@ -1,6 +1,6 @@
 [project]
 name = "cava-nlp"
-version = "0.8.2"
+version = "0.8.3"
 description = "CaVa Platform Natural Language Processing spaCy components and pipeline"
 readme = "README.md"
 

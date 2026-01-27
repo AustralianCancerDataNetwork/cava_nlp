@@ -15,3 +15,5 @@
 - loosenend strprtf version requirements for compatibility
 ## 0.8.2
 - added custom context handlers back in
+## 0.8.3
+- bugfix for overly enthusiastic removal of unused imports
