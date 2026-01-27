@@ -24,3 +24,5 @@
 ## 0.8.6
 - new context resolution step - intended for lab results
 - modification to handle context profiles
+## 0.8.7
+- modified package data resource paths 

@@ -1,6 +1,6 @@
 [project]
 name = "cava-nlp"
-version = "0.8.6"
+version = "0.8.7"
 description = "CaVa Platform Natural Language Processing spaCy components and pipeline"
 readme = "README.md"
 
@@ -37,7 +37,7 @@ exclude = ["notebooks*"]
   "namespaces/**/*.json",
   "rule_engine/*.yaml",
   "rule_engine/**/*.yaml",
-  "context/*.json"
+  "context/**/*.json"
 ]
 
 [project.optional-dependencies]
