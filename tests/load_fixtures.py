@@ -2,7 +2,6 @@ import csv
 import ast
 import os
 
-
 def parse_token_list(raw):
     """
     Parse a CSV "Expected Tokens" or "Expected Result" field.
@@ -47,7 +46,7 @@ def load_csv_rows(filename, skip_empty_field="Input Data"):
     """
     Generic CSV loader for both tokenisation and normalisation tests.
     """
-    fixtures_path = os.path.join(os.path.dirname(__file__), filename)
+    fixtures_path = os.path.join(os.path.dirname(__file__), 'fixture_data', filename)
 
     rows = []
     with open(fixtures_path, newline="", encoding="utf-8-sig") as f:

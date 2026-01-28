@@ -1,6 +1,5 @@
 import spacy, pytest
 from cava_nlp import CaVaLang  
-from .core_fixtures import nlp_cava, processed_doc, raw_text
 from cava_nlp.tokenization.exceptions import (
     build_stage_exceptions,
     build_special_vocab_exceptions,

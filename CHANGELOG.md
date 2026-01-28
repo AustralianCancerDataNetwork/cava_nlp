@@ -30,3 +30,5 @@
 - refactoring of rule engine to validate configuration on load
 - typing considerations
 - initial docs
+## 0.9.1
+- stripped punctuation at start/end of rule-engine matches

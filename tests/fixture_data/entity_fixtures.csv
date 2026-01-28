@@ -105,5 +105,5 @@ pgsga_a13_equals,"PG-SGA=A13","{'PG-SGA=A13': 'MALNUTRITION'}","{'pgsga': {'PG-S
 pgsga_b11_equals_spaces,"PGSGA = B/11","{'PGSGA = B/11': 'MALNUTRITION'}","{'pgsga': {'PGSGA = B/11': 'B/11'}}",
 pgsga_b11_equals_hyphen,"PG-SGA = B/11","{'PG-SGA = B/11': 'MALNUTRITION'}","{'pgsga': {'PG-SGA = B/11': 'B/11'}}",
 pgsga_1a_plain,"PG-SGA 1A (well-nourished)","{'PG-SGA 1A': 'MALNUTRITION'}","{'pgsga': {'PG-SGA 1A': '1A'}}",
-pgsga_a13_paren,"(PG-SGA=A13)","{'PG-SGA=A13)': 'MALNUTRITION'}","{'pgsga': {'PG-SGA=A13)': 'A13)'}}",
+pgsga_a13_paren,"(PG-SGA=A13)","{'PG-SGA=A13': 'MALNUTRITION'}","{'pgsga': {'PG-SGA=A13': 'A13'}}",
 pgsga_b21_rating,"PG-SGA rating B/21","{'PG-SGA rating B/21': 'MALNUTRITION'}","{'pgsga': {'PG-SGA rating B/21': 'B/21'}}",

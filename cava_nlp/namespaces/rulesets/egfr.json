@@ -2,11 +2,16 @@
     "token": [
         [
             {"LOWER": "egfr"},
-            {"IS_PUNCT": true, "OP": "?"},
+            {"IS_PUNCT": true, "OP": "?", "SPACY": false},
             {"LOWER": {"IN": ["g", "c", "l", "t"]}, "OP": "?"},
             {"LIKE_NUM": true, "OP": "?"},
             {"LOWER": {"IN": ["x", "s", "exon", "m"]}, "OP": "?"},
             {"LIKE_NUM": true, "OP": "?"}
+        ]
+    ],
+    "exclusions": [
+        [
+            {"TEXT": "eGFR"}
         ]
     ]
 }

@@ -133,7 +133,6 @@ class RuleEngine:
             ),
         )
 
-
         Span.set_extension(self.span_label, default=None, force=True)
 
         self.matchers: dict[str, MatcherConfig] = {}
@@ -152,6 +151,31 @@ class RuleEngine:
         for _, s, e in matches:
             raw.append(span[s:e])
         return filter_spans(raw)
+    
+    def _trim_punct_edges(self, sp: Span) -> Span | None:
+        """
+        Remove leading and trailing punctuation tokens from a span.
+        Returns None if no tokens remain.
+
+        Assumption: Punctuation is never semantic at the span boundary.
+        Impact: Significantly more likely to be a context factor match - 
+        we only want the core text, and internal punctionation if any.
+        """
+        start, end = sp.start, sp.end
+
+        # Trim leading punctuation
+        while start < end and sp.doc[start].is_punct:
+            start += 1
+
+        # Trim trailing punctuation
+        while end > start and sp.doc[end - 1].is_punct:
+            end -= 1
+
+        if start >= end:
+            return None
+
+        return Span(sp.doc, start, end, label=sp.label)
+
 
     def find_spans(self, doc: Doc) -> list[Span]:
         collected: list[Span] = []
@@ -159,7 +183,9 @@ class RuleEngine:
         for group_name, cfg in self.matchers.items():
             for _, start, end in cfg.matcher(doc):
                 sp = Span(doc, start, end, label=group_name)
-
+                sp = self._trim_punct_edges(sp)
+                if sp is None:
+                    continue
                 if cfg.exclusion is not None:
                     if any(
                         start >= ex_start and end <= ex_end

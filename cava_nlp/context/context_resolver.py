@@ -7,25 +7,40 @@ from spacy.language import Language
 from spacy.tokens import Doc, Span
 
 
+
+
 def group_edges_by_target(edges: List[Tuple[Span, ConTextModifier]]) -> Dict[Span, List[ConTextModifier]]:
     grouped: dict[Span, List[ConTextModifier]] = defaultdict(list)
     for target, modifier in edges:
         grouped[target].append(modifier)
     return grouped
 
-
-def modifier_distance(target: Span, modifier: ConTextModifier) -> int:
-    """
-    Distance in tokens between modifier and target.
-    Lower = closer.
-    """
+def modifier_distance(
+    target: Span,
+    modifier: ConTextModifier,
+    *,
+    sentence_penalty: int = 50,
+) -> int:
     modifier_start, modifier_end = modifier.modifier_span
+
+    # --- base token distance ---
     if modifier_start <= target.start:
-        return target.start - modifier_end
+        token_dist = target.start - modifier_end
     elif modifier_start >= target.end:
-        return modifier_start - target.end
+        token_dist = modifier_start - target.end
     else:
-        return 0  # overlapping (rare but strongest)
+        token_dist = 0
+
+    # --- sentence penalty ---
+    target_sent = target.sent
+    modifier_sent = target.doc[modifier_start].sent
+
+    if target_sent is modifier_sent:
+        sent_penalty = 0
+    else:
+        sent_penalty = sentence_penalty
+
+    return token_dist + sent_penalty
     
 def resolve_closest_modifier(edges: List[Tuple[Span, ConTextModifier]]) -> List[Tuple[Span, ConTextModifier]]:
     grouped = group_edges_by_target(edges)

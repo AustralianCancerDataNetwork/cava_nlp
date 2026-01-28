@@ -8,8 +8,6 @@ from .registry import register_context_extensions
 
 MEDSPACY_CONTEXT_FACTORY = "medspacy_context"
 
-
-
 def _validate_context_rules(path: Path) -> None:
     try:
         data = json.loads(path.read_text())
