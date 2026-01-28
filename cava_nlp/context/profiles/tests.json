@@ -42,14 +42,34 @@
       "category": "POSITIVE",
       "pattern": [
             {
+                "LOWER": {"IN": ["positive", "detected", "elevated", "high", "confirmed", "present", "+", "+ve"] }
+            }
+        ],
+      "direction": "BACKWARD"
+    },
+    {
+      "literal": "positive",
+      "category": "POSITIVE",
+      "pattern": [
+            {
                 "LOWER": {"IN": ["positive", "detected", "elevated", "high", "confirmed", "present"] }
             },
             {
-                "LOWER": {"IN": ["for", "to"]},
-                "OP": "?"
+                "LOWER": {"IN": ["for", "to"]}
             }
 
         ],
+      "direction": "FORWARD"
+    },
+    {
+      "literal": "negative",
+      "category": "NEGATED_EXISTENCE",
+      "pattern": [
+              {
+                  "LOWER": {"IN": ["negative", "undetectable", "normal", "-", "-ve"] }
+              }
+  
+          ],
       "direction": "BACKWARD"
     },
     {
@@ -57,15 +77,37 @@
       "category": "NEGATED_EXISTENCE",
       "pattern": [
               {
-                  "LOWER": {"IN": ["negative", "undetectable", "no", "normal"] }
+                  "LOWER": {"IN": ["negative", "undetectable", "-ve"] }
               },
               {
-                  "LOWER": {"IN": ["for", "to"]},
-                  "OP": "?"
+                  "LOWER": {"IN": ["for", "to"]}
               }
   
           ],
       "direction": "BIDIRECTIONAL"
+    },
+    {
+      "literal": "negative",
+      "category": "NEGATED_EXISTENCE",
+      "pattern": [
+              {
+                  "LOWER": "-",
+                  "SPACY": false
+              }
+  
+          ],
+      "direction": "BIDIRECTIONAL"
+    },
+    {
+      "literal": "negative",
+      "category": "NEGATED_EXISTENCE",
+      "pattern": [
+              {
+                  "LOWER": {"IN": ["no", "undetectable"] }
+              }
+  
+          ],
+      "direction": "FORWARD"
     },
     {
       "category": "NEGATED_EXISTENCE",

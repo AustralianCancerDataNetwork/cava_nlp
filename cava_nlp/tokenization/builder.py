@@ -1,13 +1,13 @@
-import re
 import spacy
 from spacy.lang.en import English
+from typing import Pattern, cast
 
 
-def build_cava_prefixes():
+def build_cava_prefixes() -> list[str | Pattern[str]]:
     """
     Build custom prefixes for brutal clinical splitting.
     """
-    base = list(English.Defaults.prefixes) # type: ignore
+    base = cast(list[str | Pattern[str]], list(English.Defaults.prefixes)) # type: ignore
 
     extra = [
         "@", r"\?", "~", "<", ">", ";", r"\^",
@@ -22,9 +22,9 @@ def build_cava_prefixes():
     return extra + base
 
 
-def build_cava_suffixes():
+def build_cava_suffixes() -> list[str | Pattern[str]]:
 
-    base = list(English.Defaults.suffixes) # type: ignore
+    base = cast(list[str | Pattern[str]], list(English.Defaults.suffixes)) # type: ignore
 
     extra = [
         "@", "~", "<", ">", ";", r"\(", r"\)", r"\|",
@@ -35,9 +35,9 @@ def build_cava_suffixes():
     return extra + base
 
 
-def build_cava_infixes():
+def build_cava_infixes() -> list[str | Pattern[str]]:
 
-    base = list(English.Defaults.infixes) # type: ignore
+    base = cast(list[str | Pattern[str]], list(English.Defaults.infixes)) # type: ignore
 
     extra = [
         r"\/",  r"-", r"\*", r"\^", r"(?<!\d)\.(?!\d)", # r"\.", - now it still uses a period infix but only outside numbers

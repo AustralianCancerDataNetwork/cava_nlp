@@ -1,8 +1,12 @@
+# type: ignore
 from spacy.symbols import ORTH, NORM
-import re
+from typing import Dict, List
 from ._tokenizer_exceptions_list import stage_exceptions, special_vocab
 
-special_cases = [
+TokenizerException = List[Dict[str, str]]
+SpecialCase = tuple[str, TokenizerException]
+
+special_cases: List[SpecialCase] = [
     ['??', [{ORTH: '??', NORM: 'query'}]],
     ['???', [{ORTH: '???', NORM: 'query'}]],
     ['+++', [{ORTH: '+++', NORM: 'extreme_positive'}]],
@@ -23,10 +27,10 @@ special_cases = [
 ]
 
 # added special cases to capture units with a slash in the middle
-units_num = ['mg', 'mcg', 'g', 'units', 'u', 'mgs', 'mcgs', 'gram', 'grams', 'mG', 'mL', 'mol']
-units_denom = ['mg', 'mgc', 'g', 'kg', 'ml', 'l', 'm2', 'm^2', 'hr', 'liter', 'gram', 'L', 'mL', 'KG', 
-               'mG', 'kG', 'kilogram', 'lb', 'pounds', 'lbs', 'kilos', 'Kg']
-unit_suffix = []
+units_num: List[str] = ['mg', 'mcg', 'g', 'units', 'u', 'mgs', 'mcgs', 'gram', 'grams', 'mG', 'mL', 'mol']
+units_denom: List[str] = ['mg', 'mgc', 'g', 'kg', 'ml', 'l', 'm2', 'm^2', 'hr', 'liter', 'gram', 'L', 'mL', 'KG', 
+                          'mG', 'kG', 'kilogram', 'lb', 'pounds', 'lbs', 'kilos', 'Kg']
+unit_suffix: List[str] = []
 
 for a in units_num:
     for b in units_denom:
@@ -37,21 +41,21 @@ for a in units_num:
 units_regex = '|'.join([f'{u}' for u in units_denom])
 units_regex = f'^(\\d+)?({units_regex})$'
 
-def build_stage_exceptions():
+def build_stage_exceptions() -> Dict[str, TokenizerException]:
     return {
         stage: [{ORTH: stage, NORM: "stage"}]
         for stage in stage_exceptions
     }
 
 
-def build_special_vocab_exceptions():
+def build_special_vocab_exceptions() -> Dict[str, TokenizerException]:
     return {
         term: [{ORTH: term, NORM: "cava_term"}]
         for term in special_vocab
     }
 
 
-def build_clinical_symbol_exceptions():
+def build_clinical_symbol_exceptions() -> Dict[str, TokenizerException]:
     exc = {}
     for case, rule in special_cases:
         exc[case] = rule
@@ -72,7 +76,7 @@ def build_clinical_symbol_exceptions():
 
 
 
-def build_cycle_day_exceptions(max_cycle: int = 6, max_day: int = 21):
+def build_cycle_day_exceptions(max_cycle: int = 6, max_day: int = 21) -> Dict[str, TokenizerException]:
     """
     Build a list of cycle/day shorthand tokens used in oncology notes,
     such as c1d1, c2d7, etc.

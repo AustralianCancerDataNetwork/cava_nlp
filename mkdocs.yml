@@ -1,0 +1,70 @@
+site_name: CaVa NLP
+site_description: All rules-based text-processing functionality related to the CaVa processing pipeline 
+site_url: https://AustralianCancerDataNetwork.github.io/cava_nlp/
+repo_url: https://github.com/AustralianCancerDataNetwork/cava_nlp
+repo_name: cava_nlp
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - tables
+  - attr_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - js/mermaid-init.js
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - cava_nlp
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_signature_annotations: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            inherited_members: true
+            members_order: source
+            separate_signature: true
+            unwrap_annotated: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Pipeline:
+      - pipeline/index.md
+      - Tokenization: pipeline/tokenization.md
+      - Normalisation: pipeline/normalisation.md
+      - Rule engine: pipeline/rule-engine.md
+  - Reference:
+      - reference/index.md
+      - Language: reference/language.md
+      - Tokenization: reference/tokenizer.md
+      - Normalisation: reference/normaliser.md
+      - Rule engine: reference/rule_engine.md

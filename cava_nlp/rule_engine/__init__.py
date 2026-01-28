@@ -1,7 +1,12 @@
-from spacy.language import Language
-from .rule_engine import RuleEngine  
-from cava_nlp.namespaces.core.loader import load_engine_config
+#from __future__ import annotations
+
 from pathlib import Path
+from typing import Optional
+
+from spacy.language import Language
+
+from .rule_engine import RuleEngine, RuleEngineConfig
+from cava_nlp.namespaces.core.loader import load_engine_config
 
 ENGINE_CONFIG_ROOT = Path(__file__).parent / "engine_config"
 
@@ -12,7 +17,12 @@ ENGINE_CONFIG_ROOT = Path(__file__).parent / "engine_config"
         "component_name": None,
     },
 )
-def create_rule_engine(nlp, name, engine_config_path, component_name):
+def create_rule_engine(
+    nlp: Language,
+    name: str,
+    engine_config_path: Optional[Path],
+    component_name: Optional[str],
+) -> RuleEngine:
     if engine_config_path is None:
         engine_config_path = ENGINE_CONFIG_ROOT / "default.yaml"
     if component_name is None:
@@ -23,5 +33,5 @@ def create_rule_engine(nlp, name, engine_config_path, component_name):
 
     if comp_cfg is None:
         raise ValueError(f"Component '{component_name}' not found in engine config.")
-
-    return RuleEngine(nlp=nlp, name=name, config=comp_cfg["config"])
+    engine_cfg = RuleEngineConfig.from_mapping(comp_cfg["config"])
+    return RuleEngine(nlp=nlp, name=name, config=engine_cfg)

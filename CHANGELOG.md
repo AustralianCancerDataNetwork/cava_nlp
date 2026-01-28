@@ -26,3 +26,7 @@
 - modification to handle context profiles
 ## 0.8.7
 - modified package data resource paths 
+## 0.9.0
+- refactoring of rule engine to validate configuration on load
+- typing considerations
+- initial docs

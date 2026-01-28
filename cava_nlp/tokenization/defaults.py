@@ -1,8 +1,11 @@
+# type: ignore
 import spacy
 from spacy.lang.en import English
-from .builder import build_cava_prefixes, build_cava_suffixes, build_cava_infixes
+from spacy.language import Language
 from spacy.tokenizer import Tokenizer
+from typing import Dict, List, Callable, Iterable, Pattern
 from spacy.util import compile_infix_regex, compile_prefix_regex, compile_suffix_regex
+from .builder import build_cava_prefixes, build_cava_suffixes, build_cava_infixes
 from .exceptions import (
     build_stage_exceptions,
     build_special_vocab_exceptions,
@@ -10,7 +13,9 @@ from .exceptions import (
     build_cycle_day_exceptions
 )
 
-def build_cava_exceptions(base_exceptions):
+def build_cava_exceptions(
+        base_exceptions: Dict[str, List[Dict[str, str]]]
+    ) -> Dict[str, List[Dict[str, str]]]:
     """
     Build ALL clinical/cancer-specific exceptions while removing irrelevant English exceptions.
     """
@@ -31,7 +36,7 @@ def build_cava_exceptions(base_exceptions):
     return exc
 
 
-def create_cava_tokenizer(nlp):
+def create_cava_tokenizer(nlp: Language) -> Tokenizer:
     """
     Core tokenizer factory.
     Uses custom infix/prefix/suffix and pruned exceptions.
@@ -59,10 +64,14 @@ class CaVaLangDefaults(English.Defaults):
     - URL recognition disabled
     """
 
-    tokenizer_exceptions = build_cava_exceptions(English.Defaults.tokenizer_exceptions)
-    prefixes = build_cava_prefixes()
-    suffixes = build_cava_suffixes()
-    infixes = build_cava_infixes()
+    tokenizer_exceptions: dict[str, list[dict[str, str]]] = (
+        build_cava_exceptions(English.Defaults.tokenizer_exceptions)
+    )
 
-    url_match = None
-    create_tokenizer = create_cava_tokenizer
+    prefixes: Iterable[str | Pattern[str]] = build_cava_prefixes()
+    suffixes: Iterable[str | Pattern[str]] = build_cava_suffixes()
+    infixes: Iterable[str | Pattern[str]] = build_cava_infixes()
+
+
+    url_match: Callable[[str], bool] | None = None
+    create_tokenizer: Callable[[Language], Tokenizer] = create_cava_tokenizer

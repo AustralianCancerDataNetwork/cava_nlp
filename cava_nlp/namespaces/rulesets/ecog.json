@@ -2,7 +2,8 @@
   "token": ${constructs.value_extractor_constructs.ecog_patterns},
   "value": [
     [{"TEXT": {"IN": ["0","1","2","3","4"]}}], 
-    [{"LOWER": {"IN": ["zero", "o"]}}]
+    [{"LOWER": {"IN": ["zero", "o"]}}],
+    [{"_": {"range": true}}]
   ],
   "exclusions": [[{"TEXT": {"FUZZY": {"IN": ["karnofsky", "nodal", "nutrition", "receptor"]}}}]]
 }

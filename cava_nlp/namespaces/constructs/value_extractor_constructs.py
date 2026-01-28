@@ -143,10 +143,11 @@ ecog_backhalf = [
     ],
     [
       {"IS_DIGIT": True}, 
-      {"LOWER": {"IN": ["=", "-", "/", "to", "and", "now"]}}, 
+      {"LOWER": {"IN": ["=", "/", "to", "and", "now"]}}, 
       {"IS_DIGIT": True}
     ], 
-    [{"_": {'decimal': True}}]
+    [{"_": {'decimal': True}}], 
+    [{"_": {'range': True}}]
 ]
 
 ecog_patterns = [ecog_preface + pattern for pattern in ecog_backhalf] + \

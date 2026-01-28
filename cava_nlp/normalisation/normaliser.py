@@ -348,6 +348,53 @@ class UnitNormalizer(BaseNormalizer):
                 "unit": unit_part
             }
         )
+    
+class RangeNormalizer(BaseNormalizer):
+    """
+    Normalizes numeric ranges like:
+        1-2
+        3–5
+        10 - 20
+
+    Excludes dates because DateNormalizer runs first.
+    """
+    NAME = "range"
+    EXTENSIONS = ["value", "low", "high"]
+
+    PATTERNS = [
+        [
+            {"LIKE_NUM": True},
+            {
+                "TEXT": {"IN": ["-", "–", "—"]},
+                "SPACY": False
+            },
+            {"LIKE_NUM": True},
+        ],
+        [
+            {"LIKE_NUM": True},
+            {
+                "TEXT": {"IN": ["to"]},
+            },
+            {"LIKE_NUM": True},
+        ],
+    ]
+
+    def compute(self, span):
+        try:
+            low = float(span[0].text)
+            high = float(span[-1].text)
+        except ValueError:
+            return NormalisationResult(norm=span.text)
+
+        return NormalisationResult(
+            norm=f"{low}-{high}",
+            attrs={
+                "value": [low, high],
+                "low": low,
+                "high": high,
+            }
+        )
+
 
 class ClinicalNormalizer:
     def __init__(self, nlp):
@@ -356,7 +403,8 @@ class ClinicalNormalizer:
             DecimalNormalizer(nlp),
             SciNotNormalizer(nlp),
             TimeNormalizer(nlp),
-            UnitNormalizer(nlp)
+            UnitNormalizer(nlp),
+            RangeNormalizer(nlp),
         ]
 
     def create_span_groups(self, doc):
@@ -374,3 +422,5 @@ class ClinicalNormalizer:
             doc = norm.apply(doc)
         self.create_span_groups(doc)
         return doc
+
+

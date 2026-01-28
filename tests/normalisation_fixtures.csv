@@ -3,7 +3,7 @@ test_email_simple,contact me at test@example.com,"[contact, me, at, xxxxxxxxxxxx
 test_email_hyphen,reach john-doe@clinic.org today,"[reach, xxxxxxxxxxxxxxxxxxx, today]",{},{}
 test_email_complex,send to x.y_z-123@sub.domain.com,"[send, to, xxxxxxxxxxxxxxxxxxxxxxxx]",{},{}
 test_decimal_simple,Temp is 36.9 today,"[Temp, is, 36.9, today]",{},"{'36.9': {'kind': 'decimal', 'value': 36.9}}"
-test_decimal_multiple,Range 5.0-7.2,"[Range, 5.0, -, 7.2]",{},"{'5.0': {'kind': 'decimal', 'value': 5.0}, '7.2': {'kind': 'decimal', 'value': 7.2}}"
+test_decimal_multiple,Range 5.0-7.2,"[Range, 5.0-7.2]",{},"{'5.0-7.2': {'kind': 'range', 'value': [5.0, 7.2]}}"
 test_date_lower,follow up on 12 jan 2024,"[follow, up, on, 12 jan 2024]",{'12 jan 2024': '2024-01-12'},{'12 jan 2024': {'kind': 'date'}}
 test_date_mixed,appt booked 3 March 2025,"[appt, booked, 3 March 2025]",{'3 March 2025': '2025-03-03'},{'3 March 2025': {'kind': 'date'}}
 test_date_short_month,scan done 7 sep 2022,"[scan, done, 7 sep 2022]",{'7 sep 2022': '2022-09-07'},{'7 sep 2022': {'kind': 'date'}}

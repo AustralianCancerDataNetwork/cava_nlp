@@ -1,3 +1,4 @@
+# type: ignore
 import re
 from spacy.symbols import ORTH, NORM
 
