@@ -135,3 +135,17 @@ def test_dash_only_negates_when_attached(nlp_with_tests_context):
 
     assert ents["EGFR"]._.is_negated is True
     assert ents["KRAS"]._.is_positive is True
+
+
+def test_overlapping_modifier_is_rejected(nlp_with_tests_context):
+    doc = nlp_with_tests_context("PDL-1 (high)")
+
+    # Find the PDL1 entity (don’t rely on exact text equality)
+    pdl1 = next(
+        ent for ent in doc.ents
+        if ent.text.lower().startswith("pdl-1")
+    )
+    assert pdl1 is not None
+    assert pdl1._.is_positive is True
+    # the hyphen should not cause negation
+    assert not getattr(pdl1._, "is_negated", False)

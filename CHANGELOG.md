@@ -32,3 +32,5 @@
 - initial docs
 ## 0.9.1
 - stripped punctuation at start/end of rule-engine matches
+## 0.9.2
+- clear attributes when applying resolver to context graph

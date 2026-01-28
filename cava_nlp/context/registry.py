@@ -4,6 +4,8 @@ from typing import Mapping, Any
 
 _baseline_registered = False
 
+LOCAL_ATTRIBUTES = DEFAULT_ATTRIBUTES.copy()
+
 def register_context_extensions(
         *,
     span_attrs: Mapping[str, Mapping[str, Any]] | None = None,
@@ -16,12 +18,23 @@ def register_context_extensions(
     global _baseline_registered
 
     if not _baseline_registered:        
+        # todo: not sure where to put the attributes for custom 
+        # profile loading so just put them here for now
+        # is_current means explicit currency (e.g. 'now', 'currently')
+        # is unconfirmed is different to hypothetical (pending as opposed 
+        # to unknown / possible)
+        # date of is for explicit temporal context esp with respect to 
+        # dated sections
         Span.set_extension("is_current", default=False, force=True)
         Span.set_extension("date_of", default=False, force=True)
+        Span.set_extension("is_unconfirmed", default=False, force=True)
+        Span.set_extension("is_positive", default=False, force=True)
 
-        DEFAULT_ATTRIBUTES.update({
+        LOCAL_ATTRIBUTES.update({
             "CURRENT": {"is_current": True},
             "DATEOF": {"date_of": True},
+            "POSITIVE": {"is_positive": True},
+            "UNCONFIRMED": {"is_unconfirmed": True},
         })
         _baseline_registered = True
 

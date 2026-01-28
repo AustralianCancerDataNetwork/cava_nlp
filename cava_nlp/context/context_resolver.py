@@ -5,9 +5,38 @@ from medspacy.context.context_graph import ConTextGraph # type: ignore[import-un
 from typing import Protocol
 from spacy.language import Language
 from spacy.tokens import Doc, Span
+from ..context.registry import LOCAL_ATTRIBUTES
 
+REJECT_DISTANCE: int = 1_000_000
 
+CONTEXT_ATTRS: set[str] = {
+    attr_name
+    for attr_map in LOCAL_ATTRIBUTES.values()
+    for attr_name in attr_map.keys()
+}
 
+def clear_context_attrs(span: Span) -> None:
+    """
+    We reset all context attributes on the span to False, because 
+    the context graph that has been resolved will be the source of truth,
+    and we don't know if any attributes were set elsewhere.
+    """
+    for attr in CONTEXT_ATTRS:
+        if Span.has_extension(attr):
+            # Use False, not None — context attrs are booleans
+            setattr(span._, attr, False)
+
+def apply_context_from_graph(graph: ConTextGraph) -> None:
+    """
+    Reapply context attributes to target spans based on resolved graph edges.
+    """
+    for target, modifier in graph.edges:
+        # modifier.category is e.g. "POSITIVE"
+        cat = modifier.category
+        props = LOCAL_ATTRIBUTES[cat]
+        for attr, value in props.items():
+            if Span.has_extension(attr):
+                setattr(target._, attr, value)
 
 def group_edges_by_target(edges: List[Tuple[Span, ConTextModifier]]) -> Dict[Span, List[ConTextModifier]]:
     grouped: dict[Span, List[ConTextModifier]] = defaultdict(list)
@@ -29,7 +58,8 @@ def modifier_distance(
     elif modifier_start >= target.end:
         token_dist = modifier_start - target.end
     else:
-        token_dist = 0
+        # reject modifiers internal to target span
+        return REJECT_DISTANCE
 
     # --- sentence penalty ---
     target_sent = target.sent
@@ -47,11 +77,18 @@ def resolve_closest_modifier(edges: List[Tuple[Span, ConTextModifier]]) -> List[
     resolved_edges: List[Tuple[Span, ConTextModifier]] = []
 
     for target, modifiers in grouped.items():
-        best = min(
-            modifiers,
-            key=lambda m: modifier_distance(target, m)
-        )
-        resolved_edges.append((target, best))
+
+        best: ConTextModifier | None = None
+        best_dist = REJECT_DISTANCE
+
+        for modifier in modifiers:
+            dist = modifier_distance(target, modifier)
+            if dist < best_dist:
+                best_dist = dist
+                best = modifier
+
+        if best is not None:
+            resolved_edges.append((target, best))
 
     return resolved_edges
 
@@ -77,6 +114,12 @@ def resolve_closest_context(doc: Doc) -> Doc:
 
     # mutate in place OR replace graph
     resolved_graph = resolver.resolve(graph)
+    # reset context state
+    targets = {target for target, _ in resolved_graph.edges}
+    for target in targets:
+        clear_context_attrs(target)
+    # reapply from resolved graph
+    apply_context_from_graph(resolved_graph)
     doc._.context_graph = resolved_graph
 
     return doc

@@ -1,10 +1,9 @@
 from spacy.language import Language
 import json
 from typing import Any, Dict, Mapping
-from medspacy.context import DEFAULT_ATTRIBUTES  # type: ignore[import-untyped]
 from pathlib import Path
 from .config import ContextConfig, DEFAULT_CONTEXT_CONFIG, CONTEXT_PROFILES
-from .registry import register_context_extensions
+from .registry import register_context_extensions, LOCAL_ATTRIBUTES
 
 MEDSPACY_CONTEXT_FACTORY = "medspacy_context"
 
@@ -31,7 +30,7 @@ def _merge_span_attrs(
     """
 
     merged: Dict[str, Dict[str, Any]] = {
-        key: dict(value) for key, value in DEFAULT_ATTRIBUTES.items()
+        key: dict(value) for key, value in LOCAL_ATTRIBUTES.items()
     }
 
     if extra:
@@ -58,6 +57,9 @@ def enable_context(
             raise ValueError(f"Unknown context profile: {profile}")
         profile_path = CONTEXT_PROFILES[profile]
         config = ContextConfig(
+            # todo: combine with user override? we can get
+            # category from the json but how do we get the 
+            # attribute label?
             span_attrs=DEFAULT_CONTEXT_CONFIG.span_attrs,
             rules_path=profile_path
         )
