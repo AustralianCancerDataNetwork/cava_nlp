@@ -3,15 +3,6 @@ from spacy.tokens import Doc, Span
 from typing import Optional
 from spacy.tokens import Token
 
-BULLET_MARKERS: set[str] = {
-    "-",      # hyphen
-    "•",      # bullet
-    "*",      # asterisk
-    "–",      # en dash
-    "—",      # em dash
-}
-
-
 
 def first_non_space_token(span: Span) -> Optional[Token]:
     for tok in span:
@@ -28,7 +19,9 @@ class DocumentLayout:
 
     def __call__(self, doc: Doc) -> Doc:
         # if there are no sentences, return early
-        if not list(doc.sents):
+        try:
+            next(doc.sents)
+        except StopIteration:
             return doc
 
         parentheticals: list[tuple[int, int]] = []
@@ -47,7 +40,7 @@ class DocumentLayout:
                     # correctly ignores unmatched '()'
             
             first_tok = first_non_space_token(sent)
-            if first_tok and first_tok.text in BULLET_MARKERS:
+            if first_tok and getattr(first_tok._, "is_bullet", False):
                 list_items.append((sent.start, sent.end))
 
         doc._.parentheticals = parentheticals

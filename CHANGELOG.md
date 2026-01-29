@@ -39,3 +39,5 @@
 - added urllib minimum dependency to handle vulnerability
 - new bullet and list normalisation pipe
 - structural document breakdown for list items & parentheticals
+## 0.9.4
+- used new structural breakdown to resolve context

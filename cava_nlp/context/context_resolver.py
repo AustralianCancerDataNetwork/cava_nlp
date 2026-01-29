@@ -15,22 +15,74 @@ CONTEXT_ATTRS: set[str] = {
     for attr_name in attr_map.keys()
 }
 
-def parenthetical_spans(sent: Span) -> list[tuple[int, int]]:
+ATTACHED_SIGNS = {"-", "+"}
+
+def is_attached_sign(
+    target: Span,
+    modifier: ConTextModifier,
+) -> bool:
     """
-    Return (start, end) token indices for parenthetical spans in a sentence.
+    Return True if modifier is a +/- sign is orthographically attached 
+    across a contiguous, no-whitespace token chain to the target span, 
+    allowing slash-chains like HER2/BRCA-.
     """
-    spans: list[tuple[int, int]] = []
-    stack: list[int] = []
+    m_start, _ = modifier.modifier_span
+    # ensure NO SPACE between target and sign
+    for tok in target.doc[target.start : m_start]:
+        # Any whitespace breaks attachment
+        if tok.whitespace_:
+            return False
+    return True
 
-    for tok in sent:
-        if tok.text == "(":
-            stack.append(tok.i)
-        elif tok.text == ")" and stack:
-            start = stack.pop()
-            spans.append((start, tok.i + 1))  # end is exclusive
 
-    return spans
+def enclosing_span(
+    index: int,
+    spans: list[tuple[int, int]],
+) -> tuple[int, int] | None:
+    """
+    Return the (start, end) span that contains `index`, if any.
 
+    Structural locality beats linear proximity
+    
+    i.e. If a target lives inside a structural unit (parenthetical 
+    or list item), then modifiers outside that unit should be considered 
+    *further away* even if token-distance is small.
+    """
+    for start, end in spans:
+        if start <= index < end:
+            return (start, end)
+    return None
+
+def structural_penalty(
+    target: Span,
+    modifier: ConTextModifier,
+    *,
+    parentheticals: list[tuple[int, int]],
+    list_items: list[tuple[int, int]],
+    multiplier: int = 3,
+) -> int:
+    """
+    Penalise modifiers that cross structural boundaries
+    (parentheticals or list items).
+    """
+    t_start = target.start
+    m_start, _ = modifier.modifier_span
+
+    # --- parenthetical containment ---
+    t_paren = enclosing_span(t_start, parentheticals)
+    if t_paren is not None:
+        m_paren = enclosing_span(m_start, parentheticals)
+        if m_paren != t_paren:
+            return multiplier
+
+    # --- list item containment ---
+    t_list = enclosing_span(t_start, list_items)
+    if t_list is not None:
+        m_list = enclosing_span(m_start, list_items)
+        if m_list != t_list:
+            return multiplier
+
+    return 1
 
 def clear_context_attrs(span: Span) -> None:
     """
@@ -66,6 +118,9 @@ def modifier_distance(
     modifier: ConTextModifier,
     *,
     sentence_penalty: int = 50,
+    parentheticals: list[tuple[int, int]] | None = None,
+    list_items: list[tuple[int, int]] | None = None,
+    structural_multiplier: int = 3,
 ) -> int:
     modifier_start, modifier_end = modifier.modifier_span
 
@@ -78,6 +133,13 @@ def modifier_distance(
         # reject modifiers internal to target span
         return REJECT_DISTANCE
 
+    tok = target.doc[modifier_start:modifier_end]
+    # special case: attached +/- sign
+    if tok.text in ATTACHED_SIGNS:
+        is_attached = is_attached_sign(target, modifier)
+        if is_attached and not tok[0]._.is_bullet:
+            return 0
+        return REJECT_DISTANCE
     # --- sentence penalty ---
     target_sent = target.sent
     modifier_sent = target.doc[modifier_start].sent
@@ -87,9 +149,25 @@ def modifier_distance(
     else:
         sent_penalty = sentence_penalty
 
+    if parentheticals is not None or list_items is not None:
+        factor = structural_penalty(
+            target,
+            modifier,
+            parentheticals=parentheticals or [],
+            list_items=list_items or [],
+            multiplier=structural_multiplier,
+        )
+        token_dist *= factor
+
     return token_dist + sent_penalty
     
-def resolve_closest_modifier(edges: List[Tuple[Span, ConTextModifier]]) -> List[Tuple[Span, ConTextModifier]]:
+def resolve_closest_modifier(
+        edges: List[Tuple[Span, ConTextModifier]],
+        *,
+        parentheticals: list[tuple[int, int]] | None = None,
+        list_items: list[tuple[int, int]] | None = None,
+) -> List[Tuple[Span, ConTextModifier]]:
+    
     grouped = group_edges_by_target(edges)
     resolved_edges: List[Tuple[Span, ConTextModifier]] = []
 
@@ -99,7 +177,12 @@ def resolve_closest_modifier(edges: List[Tuple[Span, ConTextModifier]]) -> List[
         best_dist = REJECT_DISTANCE
 
         for modifier in modifiers:
-            dist = modifier_distance(target, modifier)
+            dist = modifier_distance(
+                target,
+                modifier,
+                parentheticals=parentheticals,
+                list_items=list_items,
+            )
             if dist < best_dist:
                 best_dist = dist
                 best = modifier
@@ -109,34 +192,44 @@ def resolve_closest_modifier(edges: List[Tuple[Span, ConTextModifier]]) -> List[
 
     return resolved_edges
 
-
 class ContextResolver(Protocol):
-    def resolve(self, graph: ConTextGraph) -> ConTextGraph: ...
+    # other graph-based resolvers can implement this interface
+    def resolve(self, graph: ConTextGraph, *, parentheticals: list[tuple[int, int]] | None = None, list_items: list[tuple[int, int]] | None = None) -> ConTextGraph: ...
 
 class ClosestModifierResolver:
 
-    def resolve(self, graph: ConTextGraph) -> ConTextGraph:
-        resolved_edges = resolve_closest_modifier(graph.edges) # type: ignore[import-untyped]
+    def __init__(self, nlp: Language):
+        self.nlp = nlp
+        
+    def resolve(
+            self, 
+            graph: ConTextGraph, 
+            *, 
+            parentheticals: list[tuple[int, int]] | None = None, 
+            list_items: list[tuple[int, int]] | None = None
+    ) -> ConTextGraph:
+        resolved_edges = resolve_closest_modifier(graph.edges, parentheticals=parentheticals, list_items=list_items) # type: ignore[import-untyped]
         graph.edges = resolved_edges
         return graph
+    
+    def __call__(self, doc: Doc) -> Doc:
+        graph = doc._.context_graph
+        if graph is None or not graph.edges:
+            return doc
 
-
-@Language.component("resolve_closest_context")
-def resolve_closest_context(doc: Doc) -> Doc:
-    graph = doc._.context_graph
-    if graph is None or not graph.edges:
+        parentheticals = getattr(doc._, "parentheticals", [])
+        list_items = getattr(doc._, "list_items", [])
+        resolved_graph = self.resolve(graph, parentheticals=parentheticals, list_items=list_items)
+        targets = {target for target, _ in resolved_graph.edges}
+        # reset context state
+        for target in targets:
+            clear_context_attrs(target)
+        # reapply from resolved graph
+        apply_context_from_graph(resolved_graph)
+        doc._.context_graph = resolved_graph
         return doc
 
-    resolver = ClosestModifierResolver()
 
-    # mutate in place OR replace graph
-    resolved_graph = resolver.resolve(graph)
-    # reset context state
-    targets = {target for target, _ in resolved_graph.edges}
-    for target in targets:
-        clear_context_attrs(target)
-    # reapply from resolved graph
-    apply_context_from_graph(resolved_graph)
-    doc._.context_graph = resolved_graph
-
-    return doc
+@Language.factory("resolve_closest_context")
+def create_context_resolver(nlp, name):
+    return ClosestModifierResolver(nlp)

@@ -2,14 +2,15 @@ import pytest
 import spacy
 from cava_nlp import CaVaLang  
 from cava_nlp.context.hooks import enable_context
-from cava_nlp.context.context_resolver import resolve_closest_context
 from cava_nlp.rule_engine import RuleEngine
+from cava_nlp.structural.document_layout import DocumentLayout
 
 
 @pytest.fixture()
 def nlp_with_context():
     n = CaVaLang()
     n.add_pipe("clinical_normalizer")
+    n.add_pipe("document_layout") 
     n.add_pipe(
         "rule_engine",
         name="ecog_value",
@@ -34,6 +35,7 @@ def nlp_with_context():
 def nlp_with_tests_context():
     n = CaVaLang()
     n.add_pipe("clinical_normalizer")
+    n.add_pipe("document_layout") 
 
     n.add_pipe(
         "rule_engine",
@@ -140,7 +142,6 @@ def test_dash_only_negates_when_attached(nlp_with_tests_context):
 def test_overlapping_modifier_is_rejected(nlp_with_tests_context):
     doc = nlp_with_tests_context("PDL-1 (high)")
 
-    # Find the PDL1 entity (don’t rely on exact text equality)
     pdl1 = next(
         ent for ent in doc.ents
         if ent.text.lower().startswith("pdl-1")
@@ -149,3 +150,25 @@ def test_overlapping_modifier_is_rejected(nlp_with_tests_context):
     assert pdl1._.is_positive is True
     # the hyphen should not cause negation
     assert not getattr(pdl1._, "is_negated", False)
+
+def test_attached_minus_single_token(nlp_with_tests_context):
+    doc = nlp_with_tests_context("EGFR-")
+    egfr = doc[0:1]
+    assert egfr._.is_negated is True
+
+
+def test_attached_minus_slash_chain(nlp_with_tests_context):
+    doc = nlp_with_tests_context("KRAS/ALK-")
+    kras = doc[0:1]
+    alk = doc[2:3]
+
+    assert kras._.is_negated is True
+    assert alk._.is_negated is True
+
+def test_attached_plus_slash_chain(nlp_with_tests_context):
+    doc = nlp_with_tests_context("KRAS/ALK+")
+    kras = doc[0:1]
+    alk = doc[2:3]
+
+    assert kras._.is_positive is True
+    assert alk._.is_positive is True

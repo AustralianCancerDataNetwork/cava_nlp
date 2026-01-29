@@ -390,7 +390,6 @@ class RangeNormalizer(BaseNormalizer):
     Normalizes numeric ranges like:
         1-2
         3–5
-        10 - 20
 
     Excludes dates because DateNormalizer runs first.
     """
@@ -399,12 +398,16 @@ class RangeNormalizer(BaseNormalizer):
 
     PATTERNS = [
         [
-            {"LIKE_NUM": True},
+            {
+                "LIKE_NUM": True, 
+                "SPACY": False},
             {
                 "TEXT": {"IN": ["-", "–", "—"]},
                 "SPACY": False
             },
-            {"LIKE_NUM": True},
+            {
+                "LIKE_NUM": True
+            },
         ],
         [
             {"LIKE_NUM": True},

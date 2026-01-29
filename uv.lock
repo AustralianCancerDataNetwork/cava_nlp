@@ -121,7 +121,7 @@ wheels = [
 
 [[package]]
 name = "cava-nlp"
-version = "0.9.3"
+version = "0.9.4"
 source = { editable = "." }
 dependencies = [
     { name = "dateparser" },
