@@ -5,9 +5,10 @@ import os
 from cava_nlp import CaVaLang
 from spacy.language import Language
 from cava_nlp.normalisation.normaliser import ClinicalNormalizer
-from .load_fixtures import parse_token_list, load_csv_rows
+from .load_fixtures import load_csv_rows
 from dataclasses import dataclass
 from cava_nlp.rule_engine import RuleEngine
+from cava_nlp.context.hooks import enable_context
 
 @dataclass
 class RuleEngineTestCase:
@@ -21,7 +22,8 @@ class RuleEngineTestCase:
 @pytest.fixture(scope="session")
 def nlp():
     n = CaVaLang()
-    n.add_pipe("clinical_normalizer", first=True)
+    n.add_pipe("clinical_normalizer")
+    n.add_pipe("document_layout") 
     # todo: iterate csv and pull in all in-scope rule engines to validate
     n.add_pipe(
         "rule_engine",
@@ -47,6 +49,8 @@ def nlp():
             "component_name": "pgsga_value",   
         },
     )
+    enable_context(n, profile="tests")
+    n.add_pipe("resolve_closest_context", last=True)
     return n
 
 @pytest.fixture(params=load_csv_rows("entity_fixtures.csv"))
@@ -128,13 +132,13 @@ def test_rule_engine_from_csv(scenario):
 
 
         assert not missing_spans, (
-            f"\nFAILED: Missing expected spans for {sc.name} (attr: {pipe})\n"
+            f"\nFAILED: Missing expected spans for {sc.name} (attr: {attr})\n"
             f"EXPECTED: {expected_spans}\n"
             f"ACTUAL: {actual_span_texts}\n"
         )
 
         assert not unexpected_spans, (
-            f"\nFAILED: Unexpected spans for {sc.name} (attr: {pipe})\n"
+            f"\nFAILED: Unexpected spans for {sc.name} (attr: {attr})\n"
             f"EXPECTED: {expected_spans}\n"
             f"ACTUAL: {actual_span_texts}\n"
         )
@@ -144,7 +148,7 @@ def test_rule_engine_from_csv(scenario):
             if expected_val:
                 actual_val = getattr(span._, 'value')
                 assert actual_val == expected_val, (
-                    f"\nFAILED ATTRIBUTE CHECK: {sc.name} (pipe: {pipe}, entity: {span.text}, attr: {pipe})\n"
+                    f"\nFAILED ATTRIBUTE CHECK: {sc.name} (entity: {span.text}, attr: {attr})\n"
                     f"INPUT:       {sc.input!r}\n"
                     f"EXPECTED:    {expected_val}\n"
                     f"ACTUAL:      {actual_val}\n"

@@ -35,6 +35,7 @@ components:
         egfr:
           value: egfr
           token_patterns: ${rulesets.egfr.token}
+          exclusions: ${rulesets.egfr.exclusions}
         braf:
           value: braf
           token_patterns: ${rulesets.braf.token}

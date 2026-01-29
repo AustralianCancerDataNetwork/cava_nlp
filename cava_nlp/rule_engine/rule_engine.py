@@ -21,6 +21,10 @@ class MatcherConfig:
 
 Span.set_extension("value", default=None, force=True)
 
+
+def overlaps(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    return a_start < b_end and b_start < a_end
+
 class RuleEngine:
     """
     Generic rule engine component.
@@ -188,7 +192,7 @@ class RuleEngine:
                     continue
                 if cfg.exclusion is not None:
                     if any(
-                        start >= ex_start and end <= ex_end
+                        overlaps(start, end, ex_start, ex_end)
                         for _, ex_start, ex_end in cfg.exclusion(doc)
                     ):
                         continue

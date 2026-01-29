@@ -41,3 +41,6 @@
 - structural document breakdown for list items & parentheticals
 ## 0.9.4
 - used new structural breakdown to resolve context
+## 0.9.5
+- egfr exclusions needed to be made explicit
+- modification of test cases to surface egfr / eGFR issue

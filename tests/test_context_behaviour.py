@@ -36,7 +36,6 @@ def nlp_with_tests_context():
     n = CaVaLang()
     n.add_pipe("clinical_normalizer")
     n.add_pipe("document_layout") 
-
     n.add_pipe(
         "rule_engine",
         name="variants_of_interest",
@@ -45,7 +44,6 @@ def nlp_with_tests_context():
             "component_name": "variants_of_interest",
         },
     )
-
     enable_context(n, profile="tests")
     n.add_pipe("resolve_closest_context", last=True)
     return n
