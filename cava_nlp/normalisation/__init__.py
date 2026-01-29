@@ -1,6 +1,7 @@
-from spacy.language import Language
 from .normaliser import ClinicalNormalizer
+from .normaliser_factory import create_clinical_normalizer
 
-@Language.factory("clinical_normalizer")
-def create_clinical_normalizer(nlp, name):
-    return ClinicalNormalizer(nlp)
+__all__ = [
+    "ClinicalNormalizer",
+    "create_clinical_normalizer",
+]

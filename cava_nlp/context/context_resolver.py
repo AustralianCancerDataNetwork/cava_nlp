@@ -15,6 +15,23 @@ CONTEXT_ATTRS: set[str] = {
     for attr_name in attr_map.keys()
 }
 
+def parenthetical_spans(sent: Span) -> list[tuple[int, int]]:
+    """
+    Return (start, end) token indices for parenthetical spans in a sentence.
+    """
+    spans: list[tuple[int, int]] = []
+    stack: list[int] = []
+
+    for tok in sent:
+        if tok.text == "(":
+            stack.append(tok.i)
+        elif tok.text == ")" and stack:
+            start = stack.pop()
+            spans.append((start, tok.i + 1))  # end is exclusive
+
+    return spans
+
+
 def clear_context_attrs(span: Span) -> None:
     """
     We reset all context attributes on the span to False, because 

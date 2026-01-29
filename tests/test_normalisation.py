@@ -21,7 +21,7 @@ class NormalizationTestCase:
 @pytest.fixture(scope="session")
 def nlp():
     n = CaVaLang()
-    n.add_pipe("clinical_normalizer", first=True)
+    n.add_pipe("clinical_normalizer")
     return n
 
 @pytest.fixture(params=load_csv_rows("normalisation_fixtures.csv"))

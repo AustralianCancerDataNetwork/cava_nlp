@@ -5,3 +5,6 @@ resolver.register("regex", resolve_regex)
 resolver.register("rulesets", resolve_ruleset)
 resolver.register("constructs", resolve_construct)
 
+__all__ = [
+    "resolver",
+]

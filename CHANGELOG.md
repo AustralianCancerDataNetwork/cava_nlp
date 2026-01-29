@@ -34,3 +34,8 @@
 - stripped punctuation at start/end of rule-engine matches
 ## 0.9.2
 - clear attributes when applying resolver to context graph
+## 0.9.3
+- changed structure engine imports
+- added urllib minimum dependency to handle vulnerability
+- new bullet and list normalisation pipe
+- structural document breakdown for list items & parentheticals

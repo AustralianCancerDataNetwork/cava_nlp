@@ -148,6 +148,42 @@ class DecimalNormalizer(BaseNormalizer):
             }
         )
 
+class BulletNormalizer(BaseNormalizer):
+    NAME = "bullet"
+    EXTENSIONS = ["is_bullet"]
+    SYMBOL_BULLET = [
+        {
+            "IS_SENT_START": True,
+            "TEXT": {"IN": ["-", "•", "*", "–", "—"]}
+        },
+    ]
+    SIMPLE_ENUMERATOR = [
+        {
+            "IS_SENT_START": True,
+            "TEXT": {"REGEX": r"^[0-9a-zA-Z]+$"}
+        },
+        {
+            "TEXT": {"IN": [".", ")"]},
+        },
+    ]
+    PAREN_ENUMERATOR = [
+        {
+            "IS_SENT_START": True,
+            "ORTH": "("
+        },
+        {"TEXT": {"REGEX": r"^[0-9a-zA-Z]+$"}},
+        {"ORTH": ")"},
+    ]
+    PATTERNS = [SYMBOL_BULLET, SIMPLE_ENUMERATOR, PAREN_ENUMERATOR]
+
+
+    def compute(self, span):
+        text = span.text
+        return NormalisationResult(
+            norm=text,
+            attrs={"is_bullet": True}
+        )
+
 class SciNotNormalizer(BaseNormalizer):
     """
     "WCC was 10^9 today"
@@ -405,6 +441,7 @@ class ClinicalNormalizer:
             TimeNormalizer(nlp),
             UnitNormalizer(nlp),
             RangeNormalizer(nlp),
+            BulletNormalizer(nlp),
         ]
 
     def create_span_groups(self, doc):
