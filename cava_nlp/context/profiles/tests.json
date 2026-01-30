@@ -70,7 +70,7 @@
       "category": "NEGATED_EXISTENCE",
       "pattern": [
               {
-                  "LOWER": {"IN": ["negative", "undetectable", "normal", "-ve"] }
+                  "LOWER": {"IN": ["negative", "undetectable", "normal", "-ve", "ive"] }
               }
   
           ],

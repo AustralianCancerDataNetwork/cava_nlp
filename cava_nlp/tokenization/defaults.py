@@ -26,6 +26,10 @@ def build_cava_exceptions(
         for rule, case in base_exceptions.items()
         # drop emoji-like and colon/equals prefixes
         if not rule.startswith((':', '='))
+        # drop common English *ve* contractions 
+        # because these can overload clinical 
+        # shorthand e.g. -ve, +ve
+        if not ("ve" in rule and len(rule) <= 5)
         # drop single-letter abbreviations like "p."
         if not (len(rule) == 2 and rule.endswith('.'))
     }

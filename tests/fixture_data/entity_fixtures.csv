@@ -64,7 +64,7 @@ current_status_3,current performance status of ECOG 3,"{'ECOG 3': 'ECOG'}","{'ec
 active_ecog_0,"Remains very active and working full time ECOG 0","{'ECOG 0': 'ECOG'}","{'ecog': {'ECOG 0': 0}}",
 age_86m_ecog_3,86M ECOG 3,"{'ECOG 3': 'ECOG'}","{'ecog': {'ECOG 3': 3}}",
 ecog_1_5,ECOG 1/5,"{'ECOG 1/5': 'ECOG'}","{'ecog': {'ECOG 1/5': 1}}",
-perf_score_2,performance score 2 months ago…,"{'performance score 2': 'ECOG'}","{'ecog': {'performance score 2': 2}}",True
+perf_score_2,performance score 2 months ago…,"{'performance score 2': 'ECOG'}","{'ecog': {'performance score 2': 2}}",
 simple_alk,ALK positive,"{'ALK': 'GENOMIC'}","{'variant': {'ALK': 'alk'}}",
 alk_lower,alk rearrangement,"{'alk': 'GENOMIC'}","{'variant': {'alk': 'alk'}}",
 alk_context,"Discussed results: ALK mutation detected","{'ALK': 'GENOMIC'}","{'variant': {'ALK': 'alk'}}",
