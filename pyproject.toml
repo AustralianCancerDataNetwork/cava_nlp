@@ -1,6 +1,6 @@
 [project]
 name = "cava-nlp"
-version = "0.9.6"
+version = "0.9.7"
 description = "CaVa Platform Natural Language Processing spaCy components and pipeline"
 readme = "README.md"
 
@@ -13,7 +13,8 @@ dependencies = [
     "python-dateutil==2.8.2",
     "dateparser>=1.2.2",
     "pyyaml>=6.0.3",
-    "urllib3>=2.6.0"
+    "urllib3>=2.6.0",
+    "spaczz"
 ]
 
 [dependency-groups]
@@ -22,34 +23,12 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=61", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
-include-package-data = true
+[tool.hatch.build.targets.wheel]
+packages = ["cava_nlp"]
 
-[tool.setuptools.packages.find]
-include = ["cava_nlp*"]
-exclude = ["notebooks*"]
-
-[tool.setuptools.package-data]
-"*" = [
-  "namespaces/*.json",
-  "namespaces/**/*.json",
-  "rule_engine/*.yaml",
-  "rule_engine/**/*.yaml",
-  "context/**/*.json"
-]
-
-[project.optional-dependencies]
-docs = [
-  "mkdocs>=1.6",
-  "mkdocs-material>=9.5",
-  "mkdocstrings[python]>=0.25",
-  "mkdocs-gen-files>=0.5",
-  "mkdocs-literate-nav>=0.6",
-  "mkdocs-section-index>=0.3",
-  "mkdocs-autorefs>=1.0",
-  "pymdown-extensions>=10.8",
-  "mkdocs-mermaid2-plugin>=1.2",
-]
+[tool.uv.sources]
+# spaczz = { git = "ssh://git@github.com/nicoloesch/spaczz.git", branch = "main" }
+spaczz = { path = "../spaczz", editable = true}
