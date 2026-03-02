@@ -6,7 +6,7 @@ readme = "README.md"
 
 # pysbd is is not compatible with python3.12 so even though it installs with 3.12, do not use the medspacy sentencizer with 3.12 at this time
 
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.12, <3.13"
 dependencies = [
     "medspacy==1.3.1",
     "striprtf>=0.0.2",
@@ -14,7 +14,11 @@ dependencies = [
     "dateparser>=1.2.2",
     "pyyaml>=6.0.3",
     "urllib3>=2.6.0",
-    "spaczz"
+    "pandas",  # Required for dataset creation
+    "spaczz",
+    "omop-spires",
+    "omop-graph",
+    "omop-alchemy",
 ]
 
 [dependency-groups]
@@ -31,4 +35,7 @@ packages = ["cava_nlp"]
 
 [tool.uv.sources]
 # spaczz = { git = "ssh://git@github.com/nicoloesch/spaczz.git", branch = "main" }
-spaczz = { path = "../spaczz", editable = true}
+spaczz = { path = "../spaczz", editable = true }
+omop-spires = { path = "../omop-spires", editable = true }
+omop-graph = { path = "../omop-graph", editable = true }
+omop-alchemy = { path = "../OMOP_Alchemy", editable = true }
