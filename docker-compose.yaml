@@ -10,6 +10,7 @@ services:
     volumes:
       - .:/workspace/cava-nlp:cached
       - ../omop-spires:/workspace/omop-spires:cached
+      - shared_omop_venv_data:/workspace/omop-spires/.venv
       - ../omop-graph:/workspace/omop-graph:cached
       - ../OMOP_Alchemy:/workspace/OMOP_Alchemy:cached
       - ../spaczz:/workspace/spaczz:cached
@@ -29,3 +30,5 @@ services:
 
 volumes:
   venv_cava:
+  shared_omop_venv_data:
+    external: true
