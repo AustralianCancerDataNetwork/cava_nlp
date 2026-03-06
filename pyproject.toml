@@ -19,6 +19,10 @@ dependencies = [
     "omop-spires",
     "omop-graph",
     "omop-alchemy",
+    "mkdocs<2.0",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-mermaid2-plugin",
     "scikit-learn",
 ]
 

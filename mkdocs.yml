@@ -13,6 +13,21 @@ theme:
     - navigation.top
     - content.code.copy
     - content.code.annotate
+  palette: 
+    # Light mode
+    - scheme: default
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
 
 markdown_extensions:
   - admonition
@@ -29,6 +44,12 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:mermaid2.fence_mermaid
+  - pymdownx.blocks.admonition:
+      types:
+        - note
+        - warning
+        - info
+        - danger
   - toc:
       permalink: true
 
@@ -57,13 +78,22 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Wiki: 
+    - Wiki Home: wiki/wiki.md
+    - OMOP: wiki/omop.md
+    - Knowledge Graph: wiki/knowledge-graph.md
+    - Components: wiki/components.md
+    - Inference & Grounding: wiki/inference-grounding.md
+
+
   - Pipeline:
-      - pipeline/index.md
+      - Overview: pipeline/overview.md
       - Tokenization: pipeline/tokenization.md
       - Normalisation: pipeline/normalisation.md
       - Rule engine: pipeline/rule-engine.md
+      - Regex matcher: pipeline/regex-matcher.md
   - Reference:
-      - reference/index.md
+      - Reference Home: reference/index.md
       - Language: reference/language.md
       - Tokenization: reference/tokenizer.md
       - Normalisation: reference/normaliser.md

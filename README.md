@@ -34,11 +34,11 @@ NOTE: This package relies currently on `omop-spires` and its docker setup. There
    │   │   └── bootstrap.py
    │   ├── Dockerfile.python
    │   └── docker-compose.yaml
-   │   └── .env                     # Credentials for DB (see Step 1 of omop-spires setup)
    │
    ├── cava-nlp/                   # This project
    │   ├── Dockerfile              
    │   └── docker-compose.yaml     # Includes ../omop-spires/docker/docker-compose.yaml
+   │   └── .env                    # Credentials for DB (see Step 1 of omop-spires setup)
    │
    ├── omop-graph/                 # Sibling dependency: Will be a PyPI package after development
    ├── OMOP_Alchemy/               # Sibling dependency: Will be a PyPI package after development

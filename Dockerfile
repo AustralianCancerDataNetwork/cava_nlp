@@ -1,32 +1,18 @@
-# 1. Use the pre-built image from your base project
+# 1. Inherit everything (including the vscode user and installed tools)
 FROM python-omop:latest
 
-# Create non-root user variables
-ARG USERNAME=vscode
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+# 2. Switch back to root temporarily to set up new workspace directories
+USER root
 
-# Check if user already exists (which it likely does from python-omop), if not create it
-RUN if ! getent group $USERNAME > /dev/null 2>&1; then \
-        groupadd --gid $USER_GID $USERNAME; \
-    fi \
-    && if ! id -u $USERNAME > /dev/null 2>&1; then \
-        useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash; \
-    fi
-
-# Pre-create the workspace and .venv directory so the volume mount inherits vscode ownership
+# Pre-create the workspace and .venv directory for cava-nlp, assign ownership
 RUN mkdir -p /workspace/cava-nlp/.venv \
-    && chown -R $USERNAME:$USERNAME /workspace
+    && chown -R vscode:vscode /workspace/cava-nlp
 
-# Set the working directory BEFORE switching users
+# 3. Switch back to the non-root user for runtime
+USER vscode
+
 WORKDIR /workspace/cava-nlp
 
-# (Optional) If you actually needed to install mkdocs here, uncomment the next two lines:
-# USER root
-# RUN pip install mkdocs 
-
-# 2. Switch to the non-root user for runtime
-USER $USERNAME
-
-# 3. Update PATH to prioritize the virtual environment
+# 4. Update PATH to prioritize the cava-nlp virtual environment
+# Note: This simply prepends to the existing PATH inherited from the parent
 ENV PATH="/workspace/cava-nlp/.venv/bin:$PATH"

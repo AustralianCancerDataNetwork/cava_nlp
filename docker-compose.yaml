@@ -27,6 +27,8 @@ services:
         condition: service_started
       db-omop:
         condition: service_healthy
+    ports:
+      - "8000:8000"  # mkdocs
 
 volumes:
   venv_cava:

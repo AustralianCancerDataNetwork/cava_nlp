@@ -103,6 +103,8 @@ class RuleEngine:
         config : Mapping[str, Any]
             Configuration dictionary, typically loaded from YAML/JSON.
 
+        Notes
+        -----
         Expected config structure:
 
         {
