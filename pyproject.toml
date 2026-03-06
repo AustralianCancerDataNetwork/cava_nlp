@@ -19,6 +19,7 @@ dependencies = [
     "omop-spires",
     "omop-graph",
     "omop-alchemy",
+    "scikit-learn",
 ]
 
 [dependency-groups]

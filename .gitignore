@@ -105,3 +105,4 @@ test.*
 
 /.devcontainer
 .env
+/data
