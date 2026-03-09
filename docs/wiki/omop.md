@@ -3,6 +3,13 @@
 !!! warning
     ``omop-spires`` references not fully populated as the Github page is not yet online
 
+!!! tip "Additional Resources"
+    As this wiki does not go into the definition of Onotologies, OWL and all these concepts, we provide additional resources for this:
+
+    - [Introducing RDFS & OWL](https://linkeddatatools.com/introducing-rdfs-owl/)
+    - [OWL](https://www.w3.org/TR/owl-ref/): The strict language used to define the rules (classes, properties, hierarchy)
+    - [RDF](https://www.w3.org/TR/owl-semantics/rdfs.html): One file format used to store the graph data in triple stores (Subject -> Predicate -> Object). 
+
 To make clinical data useful for research, we must move away from local hospital jargon toward a **Common Data Model (CDM)**. We utilize the **OMOP (Observational Medical Outcomes Partnership)** standard given its widespread usage and combination of various vocabularies. The OMOP CDM is described in detail [here](https://ohdsi.github.io/CommonDataModel/index.html), with exact description of components [here](https://ohdsi.github.io/CommonDataModel/cdm54.html). There is also an additional [resource](https://ohdsi.github.io/TheBookOfOhdsi/) detailing the entireity of OHDSI (pronounced like *odyssey*), the organisation behind OMOP.
 
 ## The Vocabulary Layer (Dictionary Corpi)
@@ -48,7 +55,7 @@ These tables act as the "Master Dictionary." They do not contain patient data; i
 | :--- | :--- | :--- |
 | **CONCEPT** | The central table containing every unique "Concept ID" for drugs, conditions, procedures, etc. | The primary destination for **Grounding**. Every raw string must resolve to a row here. |
 | **VOCABULARY** | A list of the various reference sources (e.g., SNOMED, RxNorm, LOINC, ICD10). | Used to filter or identify the origin of a specific concept. |
-| **CONCEPT_RELATIONSHIP** | Defines direct links between two concepts (e.g., "Maps to," "Is a," "Subsumes"). | Crucial for mapping non-standard source codes (ICD-10) to OMOP Standard Concepts. |
+| **CONCEPT_RELATIONSHIP** | Defines direct links between two concepts using **predicates** (e.g., "Maps to," "Is a," "Subsumes"). | Crucial for mapping non-standard source codes (ICD-10) to OMOP Standard Concepts. |
 | **CONCEPT_ANCESTOR** | A computationally optimized table containing the full hierarchy (all parents and all children) of **standard concepts ONLY**. | **Essential for Inference.** Allows you to find all "Lung Cancers" by querying an ancestor ID. |
 | **CONCEPT_SYNONYM** | Contains alternative names or labels for a single Concept ID. | Used to power search features and improve the accuracy of NLP token matching. |
 | **DRUG_STRENGTH** | Quantitative details of drug products (ingredients, unit of measure, and strength). | Essential for calculating dosages and ingredient-level exposures. |

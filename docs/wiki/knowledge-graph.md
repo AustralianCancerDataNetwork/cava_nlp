@@ -2,11 +2,17 @@
 
 This page explains the transition from traditional relational data storage to **Knowledge Graphs (KG)** and how we implement them via **Virtual Knowledge Graphs (VKG)** using [`omop-graph`](components.md#omop-graph).
 
+!!! tip "Utilised Resources"
+
+    - [Neo4j: What is a Knowledge Graph](https://neo4j.com/blog/knowledge-graph/what-is-knowledge-graph/)
+    - [*"Knowledge Graphs"*, Hogan, Aidan et al., 2021](https://doi.org/10.1145/3447772)
+    - [Ontop](https://ontop-vkg.org/): Virtual knowledge graphs
+
 ## 1. What is a Knowledge Graph?
 A dataset becomes a **Knowledge Graph** when it moves beyond simple records and satisfies three core properties:
 
 * **Entities are Nodes:** Nodes represent real conceptual things (e.g., "Type 2 Diabetes Mellitus"), not just database records.
-* **Relationships have Semantic Meaning:** Edges represent typed relationships (e.g., `Metformin --treats--> Diabetes`) rather than technical joins.
+* **Relationships have Semantic Meaning:** Edges represent typed relationships rather than technical joins (e.g., `Metformin --treats--> Diabetes`).
 * **Navigable Graph:** Edges compose to support reasoning and context, such as tracing a path from a drug to its therapeutic use.
 
 
@@ -38,6 +44,11 @@ To create a clean graph, we must categorize these relationships:
 
 ## 4. Virtual Knowledge Graphs (VKG)
 A **Virtual Knowledge Graph** allows us to treat our relational OMOP database as a graph without moving the data into a specialized graph database (inspired by [Ontop](https://ontop-vkg.org/)).
+
+### [Ontop](https://ontop-vkg.org/)
+Ontop translates [SPARQL](https://w3c.github.io/sparql-query/spec/) (language for data stored in Resource Description Framework (RDF) format) queries into SQL.
+Specifically, ontop virtually represents non-RDF data as a RDF knowledge graph.
+
 
 ### Implementation Strategy
 We avoid modifying the CDM directly. Instead, we use a **Semantic Layer** (a helper classification table) to filter the edges that represent actual knowledge.

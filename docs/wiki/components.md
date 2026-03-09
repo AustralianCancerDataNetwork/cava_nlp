@@ -18,6 +18,9 @@ The CaVa ecosystem consists of several specialized modules that extend the funct
 
     While spaCy handles the "flow," our custom components handle the "knowledge". This is part of the **grounding** and is handled in [**`omop-spires`**](#omop-spires). However, this grounding step relies on additional libraries, which are detailed in the following. 
 
+!!! tip
+    Check out the [spacy-101 Guide](https://spacy.io/usage/spacy-101) for further information about spaCy and its components
+
 
 ## [``orm-loader``](https://github.com/AustralianCancerDataNetwork/orm-loader): Athena-to-Postgres Ingestor { #orm-loader data-toc-label="orm-loader" }
 

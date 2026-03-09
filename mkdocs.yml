@@ -16,15 +16,15 @@ theme:
   palette: 
     # Light mode
     - scheme: default
-      primary: teal
+      primary: amber
       accent: purple
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     # Dark mode
     - scheme: slate
-      primary: teal
-      accent: lime
+      primary: amber
+      accent: red
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
