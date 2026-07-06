@@ -29,7 +29,7 @@ Out of the box, this provides:
 - deterministic clinical tokenisation
 - whitespace normalisation
 - email masking prior to tokenisation
-- medSpaCy sentence splitting
+- spaCy-native sentence splitting with clinical newline rules
 
 ```python
 doc = nlp("Email me at test@example.com")
@@ -148,5 +148,4 @@ Rule engines support:
 
 3. **Rule engines**  
    Map patterns to domain meaning and values based on configuration definitions.
-
 

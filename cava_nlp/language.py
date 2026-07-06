@@ -5,8 +5,7 @@ from typing import Any
 from spacy.util import registry
 
 # unused imports required to register components
-from medspacy.sentence_splitting import PySBDSentenceSplitter # type: ignore
-from spacy.language import Language # type: ignore
+from . import sentence_splitting
 
 from .tokenization.defaults import CaVaLangDefaults
 from .tokenization.preprocess import whitespace_preprocess
@@ -25,8 +24,8 @@ class CaVaLang(English):
         ) -> None:
         super().__init__(*args, **kwargs)  # type: ignore[reportUnknownMemberType]
 
-        # Use medSpaCy sentencizer - todo: this is better than pyrush for newlines but brings a python <3.12 dependency for pep701
-        self.add_pipe("medspacy_pysbd")
+        # Start with spaCy-native splitting and add line-oriented clinical rules.
+        self.add_pipe("cava_sentencizer")
 
     def __call__(
             self, 

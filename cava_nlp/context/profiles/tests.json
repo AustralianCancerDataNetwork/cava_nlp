@@ -70,6 +70,10 @@
       "category": "NEGATED_EXISTENCE",
       "pattern": [
               {
+                "TEXT": "-",
+                "OP": "?"
+              },
+              {
                   "LOWER": {"IN": ["negative", "undetectable", "normal", "-ve", "ive"] }
               }
   

@@ -9,6 +9,7 @@ from cava_nlp.tokenization.exceptions import (
 def test_language_registered():
     nlp = spacy.blank("cava_lang")
     assert nlp.lang == "cava_lang"
+    assert "cava_sentencizer" in nlp.pipe_names
 
 def test_email_masking(processed_doc):
     text = processed_doc.text
@@ -75,6 +76,45 @@ def test_url_not_treated_as_single_token(nlp_cava):
     assert len(doc) > 3  # should be split apart
 
 
+def test_newline_sentences_attach_breaks_to_previous_line(nlp_cava):
+    doc = nlp_cava("Assessment:\nNo fever\nNo chills\nPlan: discharge tomorrow.")
+
+    assert [sent.text for sent in doc.sents] == [
+        "Assessment:\n",
+        "No fever\n",
+        "No chills\n",
+        "Plan: discharge tomorrow.",
+    ]
+
+
+def test_newline_sentences_do_not_emit_whitespace_only_spans(nlp_cava):
+    doc = nlp_cava("He is well.\nNo fever.\nNo chills.")
+
+    assert [sent.text for sent in doc.sents] == [
+        "He is well.\n",
+        "No fever.\n",
+        "No chills.",
+    ]
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        (
+            "Please turn to p. 55. Next sentence.",
+            ["Please turn to p. 55.", "Next sentence."],
+        ),
+        (
+            "He received i.v. fluids. Next sentence.",
+            ["He received i.v. fluids.", "Next sentence."],
+        ),
+    ],
+)
+def test_sentence_splitting_preserves_common_clinical_abbreviations(nlp_cava, text, expected):
+    doc = nlp_cava(text)
+    assert [sent.text for sent in doc.sents] == expected
+
+
 @pytest.mark.parametrize("text", [
     "mg/kg",
     "ECOG 1",
@@ -86,5 +126,3 @@ def test_url_not_treated_as_single_token(nlp_cava):
 def test_roundtrip(nlp_cava, text):
     doc = nlp_cava(text)
     assert doc.text.replace(" ", "") == text.replace(" ", "")
-
-
